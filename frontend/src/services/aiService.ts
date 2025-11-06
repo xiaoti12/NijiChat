@@ -46,8 +46,6 @@ export class AIService {
         return await this.callGeminiAPI(modelConfig as GeminiConfig, messages, options)
       case 'openai':
         return await this.callOpenAIAPI(modelConfig as OpenAIConfig, messages, options)
-      case 'claude':
-        return await this.callClaudeAPI(modelConfig, messages, options)
       default:
         throw new Error(`不支持的AI模型类型: ${modelConfig.type}`)
     }
@@ -181,43 +179,6 @@ ${seiyuuProfile}
     return data.choices[0]?.message?.content || ''
   }
 
-  /**
-   * 调用Claude API
-   */
-  private async callClaudeAPI(
-    config: AIModelConfig,
-    messages: any[],
-    options: AICallOptions
-  ): Promise<string> {
-    const url = `${config.api_endpoint}/v1/messages`
-
-    // 提取系统提示词
-    const systemMessage = messages.find(m => m.role === 'system')
-    const userMessages = messages.filter(m => m.role !== 'system')
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': config.api_key,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: config.model_name,
-        max_tokens: options.max_tokens ?? config.max_tokens,
-        temperature: options.temperature ?? config.temperature,
-        system: systemMessage?.content,
-        messages: userMessages
-      })
-    })
-
-    if (!response.ok) {
-      throw new Error(`Claude API调用失败: ${response.statusText}`)
-    }
-
-    const data = await response.json()
-    return data.content[0]?.text || ''
-  }
 
   /**
    * 测试AI模型配置
@@ -242,13 +203,6 @@ ${seiyuuProfile}
           break
         case 'openai':
           response = await this.callOpenAIAPI(modelConfig as OpenAIConfig, messages, {
-            message: testMessage,
-            seiyuu_profile: '',
-            conversation_history: []
-          })
-          break
-        case 'claude':
-          response = await this.callClaudeAPI(modelConfig, messages, {
             message: testMessage,
             seiyuu_profile: '',
             conversation_history: []
