@@ -2,21 +2,21 @@ package services
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"net/url"
 	"os"
 	"time"
 
 	"seiyuu-chat/models"
+	"seiyuu-chat/utils"
+
+	"github.com/go-resty/resty/v2"
 )
 
 // MoegirlService 萌娘百科服务
 type MoegirlService struct {
-	apiBaseURL string
-	httpClient *http.Client
+	apiBaseURL  string
+	restyClient *resty.Client
 }
 
 // NewMoegirlService 创建萌娘百科服务实例
@@ -26,54 +26,23 @@ func NewMoegirlService() *MoegirlService {
 		apiBaseURL = "https://zh.moegirl.org.cn/api.php"
 	}
 
+	// 使用共享的HTTP客户端配置
+	config := utils.DefaultHTTPConfig()
+	// 为萌娘百科API定制超时时间
+	config.Timeout = 15 * time.Second
+	config.RetryMaxWaitTime = 3 * time.Second
+
+	client := utils.NewRestyClient(config)
+
 	return &MoegirlService{
-		apiBaseURL: apiBaseURL,
-		httpClient: &http.Client{
-			Timeout: 15 * time.Second,
-		},
+		apiBaseURL:  apiBaseURL,
+		restyClient: client,
 	}
 }
 
 // GetRawData 获取萌娘百科原始数据
 func (s *MoegirlService) GetRawData(ctx context.Context, name string) (*models.MoegirlRawData, error) {
-	// 构建API请求参数
-	params := url.Values{}
-	params.Add("action", "query")
-	params.Add("format", "json")
-	params.Add("prop", "revisions")
-	params.Add("titles", name)
-	params.Add("rvprop", "content")
-	params.Add("rvslots", "main")
-
-	// 构建完整URL
-	fullURL := fmt.Sprintf("%s?%s", s.apiBaseURL, params.Encode())
-
-	// 创建HTTP请求
-	req, err := http.NewRequestWithContext(ctx, "GET", fullURL, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.Header.Set("User-Agent", "NijiChat/1.0")
-
-	// 发送请求
-	resp, err := s.httpClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to send request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	// 读取响应
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response: %w", err)
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("moegirl API error: status %d", resp.StatusCode)
-	}
-
-	// 解析响应
+	// 定义响应结构
 	var apiResponse struct {
 		Query struct {
 			Pages map[string]struct {
@@ -89,9 +58,26 @@ func (s *MoegirlService) GetRawData(ctx context.Context, name string) (*models.M
 		} `json:"query"`
 	}
 
-	err = json.Unmarshal(body, &apiResponse)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	// 记录请求日志
+	utils.LogHTTPRequest("moegirl", "GetRawData", "GET", s.apiBaseURL)
+
+	// 发送HTTP请求
+	resp, err := s.restyClient.R().
+		SetContext(ctx).
+		SetQueryParams(map[string]string{
+			"action":  "query",
+			"format":  "json",
+			"prop":    "revisions",
+			"titles":  name,
+			"rvprop":  "content",
+			"rvslots": "main",
+		}).
+		SetResult(&apiResponse).
+		Get(s.apiBaseURL)
+
+	// 统一错误处理
+	if httpErr := utils.HandleHTTPError("moegirl", "GetRawData", resp, err); httpErr != nil {
+		return nil, httpErr
 	}
 
 	// 提取内容
@@ -119,38 +105,27 @@ func (s *MoegirlService) GetRawData(ctx context.Context, name string) (*models.M
 
 // SearchSeiyuu 搜索声优页面
 func (s *MoegirlService) SearchSeiyuu(ctx context.Context, keyword string) ([]string, error) {
-	// 构建搜索API请求参数
-	params := url.Values{}
-	params.Add("action", "opensearch")
-	params.Add("format", "json")
-	params.Add("search", keyword)
-	params.Add("limit", "10")
-
-	fullURL := fmt.Sprintf("%s?%s", s.apiBaseURL, params.Encode())
-
-	req, err := http.NewRequestWithContext(ctx, "GET", fullURL, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.Header.Set("User-Agent", "NijiChat/1.0")
-
-	resp, err := s.httpClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to send request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response: %w", err)
-	}
-
-	// 解析搜索结果
+	// 定义搜索响应结构
 	var searchResults []interface{}
-	err = json.Unmarshal(body, &searchResults)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+
+	// 记录请求日志
+	utils.LogHTTPRequest("moegirl", "SearchSeiyuu", "GET", s.apiBaseURL)
+
+	// 发送HTTP请求
+	resp, err := s.restyClient.R().
+		SetContext(ctx).
+		SetQueryParams(map[string]string{
+			"action": "opensearch",
+			"format": "json",
+			"search": keyword,
+			"limit":  "10",
+		}).
+		SetResult(&searchResults).
+		Get(s.apiBaseURL)
+
+	// 统一错误处理
+	if httpErr := utils.HandleHTTPError("moegirl", "SearchSeiyuu", resp, err); httpErr != nil {
+		return nil, httpErr
 	}
 
 	if len(searchResults) < 2 {
