@@ -3,7 +3,7 @@
     <div class="admin-container">
       <h1 class="admin-title">管理后台</h1>
 
-      <div v-if="!adminStore.isLoggedIn" class="login-section">
+      <div v-if="!adminStore.isLoggedIn && !isDevelopmentMode" class="login-section">
         <h2>管理员登录</h2>
         <form @submit.prevent="handleLogin" class="login-form">
           <input
@@ -27,28 +27,37 @@
         </form>
       </div>
 
-      <div v-else class="admin-content">
+      <div v-if="adminStore.isLoggedIn || isDevelopmentMode" class="admin-content">
         <div class="admin-header">
-          <p>欢迎，{{ adminStore.username }}</p>
-          <button @click="handleLogout" class="btn btn-secondary">退出登录</button>
+          <div class="admin-user-info">
+            <p>欢迎，{{ adminStore.username || (isDevelopmentMode ? '开发者' : '') }}</p>
+            <p v-if="isDevelopmentMode" class="dev-mode-hint">当前为开发模式，无需登录验证</p>
+          </div>
+          <button v-if="!isDevelopmentMode" @click="handleLogout" class="btn btn-secondary">退出登录</button>
         </div>
 
-        <div class="admin-sections">
-          <div class="admin-section">
-            <h2>声优管理</h2>
-            <p class="section-desc">添加、编辑和发布声优资料</p>
-            <div class="placeholder-box">
-              声优管理功能即将推出
-            </div>
-          </div>
+        <!-- Tab 导航 -->
+        <div class="admin-tabs">
+          <button
+            class="tab-button"
+            :class="{ active: activeTab === 'seiyuu' }"
+            @click="activeTab = 'seiyuu'"
+          >
+            声优管理
+          </button>
+          <button
+            class="tab-button"
+            :class="{ active: activeTab === 'groups' }"
+            @click="activeTab = 'groups'"
+          >
+            群组管理
+          </button>
+        </div>
 
-          <div class="admin-section">
-            <h2>群组管理</h2>
-            <p class="section-desc">创建和管理声优群组</p>
-            <div class="placeholder-box">
-              群组管理功能即将推出
-            </div>
-          </div>
+        <!-- Tab 内容 -->
+        <div class="tab-content">
+          <SeiyuuManager v-if="activeTab === 'seiyuu'" />
+          <GroupManager v-if="activeTab === 'groups'" />
         </div>
       </div>
 
@@ -60,10 +69,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAdminStore } from '@/stores/adminStore'
 import { adminLogin } from '@/services/apiService'
+import SeiyuuManager from '@/components/admin/SeiyuuManager.vue'
+import GroupManager from '@/components/admin/GroupManager.vue'
 
 const router = useRouter()
 const adminStore = useAdminStore()
@@ -75,6 +86,12 @@ const loginForm = reactive({
 
 const logging = ref(false)
 const loginError = ref<string | null>(null)
+const activeTab = ref('seiyuu')
+
+// 开发模式检测
+const isDevelopmentMode = computed(() => {
+  return import.meta.env.DEV || import.meta.env.MODE === 'development'
+})
 
 async function handleLogin() {
   logging.value = true
@@ -164,35 +181,57 @@ function goBack() {
   margin-bottom: var(--spacing-xl);
 }
 
-.admin-sections {
-  display: grid;
-  gap: var(--spacing-xl);
+.admin-user-info p {
+  margin: 0;
+  font-weight: var(--font-weight-medium);
 }
 
-.admin-section {
+.dev-mode-hint {
+  font-size: var(--font-size-xs);
+  color: #f59e0b;
+  font-weight: var(--font-weight-normal) !important;
+  margin-top: var(--spacing-xs) !important;
+}
+
+/* Tab 导航样式 */
+.admin-tabs {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-xl);
   background: var(--bg-primary);
-  padding: var(--spacing-2xl);
-  border-radius: var(--radius-xl);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-lg);
 }
 
-.admin-section h2 {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
-  margin-bottom: var(--spacing-sm);
-}
-
-.section-desc {
-  color: var(--text-muted);
-  font-size: var(--font-size-sm);
-  margin-bottom: var(--spacing-lg);
-}
-
-.placeholder-box {
-  padding: var(--spacing-xl);
-  background: var(--bg-tertiary);
+.tab-button {
+  flex: 1;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border: none;
   border-radius: var(--radius-md);
-  text-align: center;
+  background: transparent;
   color: var(--text-muted);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tab-button:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.tab-button.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+/* Tab 内容区域 */
+.tab-content {
+  background: var(--bg-primary);
+  border-radius: var(--radius-xl);
+  min-height: 600px;
 }
 
 .admin-actions {

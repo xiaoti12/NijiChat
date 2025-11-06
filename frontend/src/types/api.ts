@@ -59,25 +59,24 @@ export interface SchedulerResponse {
 export interface MoegirlRawDataResponse {
   success: boolean
   data?: {
-    raw_text: string            // 原始wiki文本
-    page_title: string
-    page_url: string
+    content: string             // 原始wiki文本
+    url: string                 // 页面URL
   }
   error?: string
 }
 
 // AI处理资料请求
 export interface ProcessProfileRequest {
-  raw_text: string              // 原始文本
-  seiyuu_name: string           // 声优名称
+  raw_data: string             // 原始文本
+  seiyuu_name: string          // 声优名称
 }
 
 // AI处理资料响应
 export interface ProcessProfileResponse {
   success: boolean
   data?: {
-    profile_markdown: string    // 处理后的Markdown格式资料
-    suggested_tags: string[]    // 建议的标签
+    markdown: string           // 处理后的Markdown格式资料
+    suggested_tags: string[]   // 建议的标签
   }
   error?: string
 }

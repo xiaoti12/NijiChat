@@ -97,6 +97,13 @@ router.beforeEach((to, from, next) => {
 
   // 检查是否需要管理员权限
   if (to.meta.requiresAuth) {
+    // 开发模式下跳过登录校验
+    if (import.meta.env.DEV || import.meta.env.MODE === 'development') {
+      console.log('开发模式：跳过管理员权限校验')
+      next()
+      return
+    }
+
     const adminStore = useAdminStore()
     if (!adminStore.isLoggedIn) {
       // 未登录，跳转到首页
