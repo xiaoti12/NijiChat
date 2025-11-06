@@ -10,6 +10,14 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/',
     name: 'Home',
+    component: () => import('@/pages/ChatHome.vue'),
+    meta: {
+      title: 'NijiChat - 聊天'
+    }
+  },
+  {
+    path: '/seiyuu',
+    name: 'SeiyuuLibrary',
     component: () => import('@/pages/SeiyuuLibrary.vue'),
     meta: {
       title: 'NijiChat - 声优库'

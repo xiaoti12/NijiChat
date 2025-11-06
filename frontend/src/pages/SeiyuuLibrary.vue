@@ -1,6 +1,11 @@
 <template>
   <div class="seiyuu-library">
     <div class="library-header">
+      <div class="header-nav">
+        <button @click="goBack" class="btn btn-secondary">
+          ← 返回
+        </button>
+      </div>
       <h1 class="library-title">声优库</h1>
       <p class="library-subtitle">选择你喜欢的声优开始对话</p>
     </div>
@@ -66,7 +71,11 @@ async function loadSeiyuu() {
 }
 
 function openChat(seiyuuId: string) {
-  router.push({ name: 'Chat1v1', params: { seiyuuId } })
+  router.push({ name: 'Home', query: { seiyuuId } })
+}
+
+function goBack() {
+  router.push({ name: 'Home' })
 }
 
 onMounted(() => {
@@ -86,6 +95,13 @@ onMounted(() => {
 .library-header {
   text-align: center;
   margin-bottom: var(--spacing-3xl);
+  position: relative;
+}
+
+.header-nav {
+  position: absolute;
+  left: 0;
+  top: 0;
 }
 
 .library-title {
@@ -180,5 +196,34 @@ onMounted(() => {
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+.btn {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: var(--transition-normal);
+  text-decoration: none;
+}
+
+.btn-primary {
+  background: var(--color-primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: var(--color-primary-dark);
+}
+
+.btn-secondary {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+  background: var(--bg-quaternary);
 }
 </style>
