@@ -1,0 +1,132 @@
+{
+  // Cloudflare Workers 配置文件
+  // 使用 JSONC 格式支持注释
+
+  "name": "seiyuu-chat-backend",
+  "main": "main.go",
+  "compatibility_date": "2024-01-01",
+  "compatibility_flags": ["nodejs_compat"],
+
+  // Worker 设置
+  "workers_dev": true,
+
+  // D1 数据库绑定
+  "d1_databases": [
+    {
+      "binding": "SEIYUU_DB",
+      "database_name": "seiyuu-chat-db",
+      "database_id": "your-d1-database-id",
+      "migrations_dir": "database/migrations",
+      "preview_database_id": "your-preview-d1-database-id"
+    }
+  ],
+
+  // KV 命名空间绑定
+  "kv_namespaces": [
+    {
+      "binding": "CACHE_KV",
+      "id": "your-kv-namespace-id",
+      "preview_id": "your-preview-kv-namespace-id"
+    }
+  ],
+
+  // 环境变量配置
+  "vars": {
+    "ENVIRONMENT": "development",
+    "MOEGIRL_API_BASE_URL": "https://zh.moegirl.org.cn/api.php"
+  },
+
+  // 生产环境配置
+  "env": {
+    "production": {
+      "name": "seiyuu-chat-backend-production",
+      "vars": {
+        "ENVIRONMENT": "production",
+        "MOEGIRL_API_BASE_URL": "https://zh.moegirl.org.cn/api.php"
+      },
+      // 生产环境的敏感变量通过 wrangler secret put 设置
+      // wrangler secret put ADMIN_JWT_SECRET --env production
+      // wrangler secret put LIGHTWEIGHT_AI_API_KEY --env production
+      "d1_databases": [
+        {
+          "binding": "SEIYUU_DB",
+          "database_name": "seiyuu-chat-db-production",
+          "database_id": "your-production-d1-database-id"
+        }
+      ],
+      "kv_namespaces": [
+        {
+          "binding": "CACHE_KV",
+          "id": "your-production-kv-namespace-id"
+        }
+      ]
+    },
+
+    "staging": {
+      "name": "seiyuu-chat-backend-staging",
+      "vars": {
+        "ENVIRONMENT": "staging",
+        "MOEGIRL_API_BASE_URL": "https://zh.moegirl.org.cn/api.php"
+      },
+      "d1_databases": [
+        {
+          "binding": "SEIYUU_DB",
+          "database_name": "seiyuu-chat-db-staging",
+          "database_id": "your-staging-d1-database-id"
+        }
+      ],
+      "kv_namespaces": [
+        {
+          "binding": "CACHE_KV",
+          "id": "your-staging-kv-namespace-id"
+        }
+      ]
+    }
+  },
+
+  // 构建配置
+  "build": {
+    "command": "go build -o worker main.go",
+    "watch_dirs": [
+      "handlers",
+      "services",
+      "models",
+      "middleware",
+      "database",
+      "utils"
+    ]
+  },
+
+  // 观察者配置（开发模式）
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
+
+  // 资源限制
+  "limits": {
+    "cpu_ms": 50
+  },
+
+  // 路由配置
+  "routes": [
+    {
+      "pattern": "api.nijichat.com/*",
+      "zone_name": "nijichat.com"
+    }
+  ],
+
+  // 触发器配置（Cron 定时任务等）
+  "triggers": {
+    "crons": [
+      // 示例: 每天凌晨2点清理过期缓存
+      // "0 2 * * *"
+    ]
+  },
+
+  // 日志配置
+  "logpush": false,
+
+  // 尾部消费者（用于实时日志）
+  "tail_consumers": []
+}
