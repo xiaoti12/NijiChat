@@ -30,4 +30,9 @@ dist-ssr
 
 .aidocs
 
+## worker builds
+**/build/
+
+.wrangler
+
 CLAUDE.md

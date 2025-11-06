@@ -4,7 +4,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 
@@ -18,9 +17,6 @@ import (
 )
 
 func main() {
-	// 设置Gin为发布模式
-	gin.SetMode(gin.ReleaseMode)
-
 	// 创建Gin路由器
 	router := gin.New()
 
@@ -37,14 +33,17 @@ func main() {
 	}
 	defer db.Close()
 
-	cache, err := database.NewKVClient("CACHE_KV")
+	cache, err := database.NewKVClient("SEIYUU_KV")
 	if err != nil {
 		log.Fatalf("Failed to connect to KV namespace: %v", err)
 	}
 
 	// 初始化服务层
 	seiyuuService := services.NewSeiyuuService(db, cache)
-	aiService := services.NewAIService()
+	aiService, err := services.NewAIService()
+	if err != nil {
+		log.Fatalf("Failed to initialize AI service: %v", err)
+	}
 	schedulerService := services.NewSchedulerService(seiyuuService, aiService)
 	moegirlService := services.NewMoegirlService()
 
@@ -88,7 +87,7 @@ func setupRoutes(
 	// 管理员接口（需要认证）
 	admin := api.Group("/admin")
 	admin.Use(middleware.AdminAuthMiddleware())
-	admin.Use(middleware.AdminRateLimitMiddleware())
+	// admin.Use(middleware.AdminRateLimitMiddleware())
 	{
 		// 管理员信息
 		admin.GET("/profile", adminHandler.GetProfile)
@@ -113,10 +112,4 @@ func setupRoutes(
 		})
 	})
 
-	// 打印已注册的路由（开发环境）
-	fmt.Println("=== Registered Routes ===")
-	for _, route := range router.Routes() {
-		fmt.Printf("%s %s\n", route.Method, route.Path)
-	}
-	fmt.Println("========================")
 }

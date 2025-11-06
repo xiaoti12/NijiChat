@@ -1,65 +1,69 @@
 package services
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
-	"time"
+	"io"
+	"net/http"
 
 	"seiyuu-chat/models"
 	"seiyuu-chat/utils"
 
-	"github.com/go-resty/resty/v2"
+	"github.com/syumai/workers/cloudflare"
 )
 
 // AIService AI服务（调用外部AI API）
 type AIService struct {
-	apiKey      string
-	apiBaseURL  string
-	restyClient *resty.Client
+	apiKey     string
+	apiBaseURL string
+	modelName  string
+	httpClient *http.Client
 }
 
 // NewAIService 创建AI服务实例
-func NewAIService() *AIService {
-	apiKey := os.Getenv("LIGHTWEIGHT_AI_API_KEY")
+func NewAIService() (*AIService, error) {
+	apiKey := cloudflare.Getenv("LIGHTWEIGHT_AI_API_KEY")
 	if apiKey == "" {
-		apiKey = "dev-ai-key" // 开发环境默认值
+		return nil, fmt.Errorf("LIGHTWEIGHT_AI_API_KEY 环境变量未设置")
 	}
 
-	apiBaseURL := os.Getenv("AI_API_BASE_URL")
+	apiBaseURL := cloudflare.Getenv("AI_API_BASE_URL")
 	if apiBaseURL == "" {
 		apiBaseURL = "https://api.openai.com/v1" // 默认使用OpenAI API
 	}
 
-	// 使用共享的HTTP客户端配置
-	config := utils.DefaultHTTPConfig()
-	// 为AI API定制超时时间和重试配置
-	config.Timeout = 30 * time.Second
-	config.RetryMaxWaitTime = 5 * time.Second
+	modelName := cloudflare.Getenv("AI_MODEL_NAME")
+	if modelName == "" {
+		modelName = "gpt-4o-mini"
+	}
 
-	client := utils.NewRestyClientWithAuth(config, apiKey)
+	// 使用 Cloudflare Workers 兼容的 HTTP 客户端
+	config := utils.DefaultHTTPConfig()
+	cloudflareClient := utils.NewCloudflareHTTPClientWithAuth(config, apiKey)
 
 	return &AIService{
-		apiKey:      apiKey,
-		apiBaseURL:  apiBaseURL,
-		restyClient: client,
-	}
+		apiKey:     apiKey,
+		apiBaseURL: apiBaseURL,
+		modelName:  modelName,
+		httpClient: cloudflareClient.HTTPClient(),
+	}, nil
 }
 
 // CallLightweightAI 调用轻量级AI模型（用于调度和资料处理）
 func (s *AIService) CallLightweightAI(ctx context.Context, prompt string) (string, error) {
 	// 构建请求体
 	requestBody := map[string]interface{}{
-		"model": "gpt-3.5-turbo", // 轻量级模型
+		"model": s.modelName, // 使用配置的模型名称
 		"messages": []map[string]string{
 			{
 				"role":    "user",
 				"content": prompt,
 			},
 		},
-		"temperature": 0.7,
-		"max_tokens":  500,
+		"temperature": 0.2,
+		"max_tokens":  2000,
 	}
 
 	// 定义响应结构
@@ -74,20 +78,48 @@ func (s *AIService) CallLightweightAI(ctx context.Context, prompt string) (strin
 		} `json:"error"`
 	}
 
+	// 序列化请求体
+	jsonBody, err := json.Marshal(requestBody)
+	if err != nil {
+		return "", fmt.Errorf("序列化请求体失败: %w", err)
+	}
+
 	// 记录请求日志
 	apiURL := s.apiBaseURL + "/chat/completions"
 	utils.LogHTTPRequest("ai", "CallLightweightAI", "POST", apiURL)
 
-	// 发送HTTP请求
-	resp, err := s.restyClient.R().
-		SetContext(ctx).
-		SetBody(requestBody).
-		SetResult(&response).
-		Post(apiURL)
+	// 创建请求
+	req, err := http.NewRequestWithContext(ctx, "POST", apiURL, bytes.NewBuffer(jsonBody))
+	if err != nil {
+		return "", fmt.Errorf("创建请求失败: %w", err)
+	}
 
-	// 统一错误处理
-	if httpErr := utils.HandleHTTPError("ai", "CallLightweightAI", resp, err); httpErr != nil {
-		return "", httpErr
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("User-Agent", "NijiChat/1.0")
+
+	// 发送请求
+	resp, err := s.httpClient.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("调用AI API失败: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// 检查响应状态
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		body, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("AI API响应错误，状态码: %d, 响应: %s", resp.StatusCode, string(body))
+	}
+
+	// 读取并解析响应
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("读取响应失败: %w", err)
+	}
+
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		return "", fmt.Errorf("解析AI响应失败: %w", err)
 	}
 
 	// 检查API返回的业务错误
@@ -107,15 +139,16 @@ func (s *AIService) ProcessSeiyuuProfile(ctx context.Context, rawText string, se
 	prompt := fmt.Sprintf(`请将以下关于声优「%s」的原始资料整理为结构化的Markdown格式。
 
 要求：
-1. 提取关键信息：姓名、生日、血型、代表作品等
+1. 总结关键信息：姓名、生日、代表作品、个人爱好、人际关系、个人轶事等
 2. 组织为清晰的Markdown格式
-3. 保持客观真实，不添加虚构内容
-4. 建议3-5个相关标签（如"萝莉音"、"治愈系"等）
+3. 保持客观真实，不添加虚构内容，不允许增加或删除信息，只能整理已有内容
+4. 建议3-5个相关标签（例如性格、爱好等）
 
 原始资料：
 %s
 
-请返回JSON格式：
+请直接返回纯JSON格式，不要使用markdown代码块：
+重要：不要添加代码块标记或任何其他格式，直接输出可解析的JSON对象！
 {
   "profile_markdown": "整理后的Markdown文本",
   "suggested_tags": ["标签1", "标签2", "标签3"]

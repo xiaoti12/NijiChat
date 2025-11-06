@@ -11,6 +11,15 @@ import (
 // AdminAuthMiddleware JWT认证中间件 - 仅管理员可访问
 func AdminAuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// 开发环境跳过认证
+		if utils.IsDevelopmentMode() {
+			// 设置默认管理员信息用于开发环境
+			c.Set("admin_id", "dev-admin")
+			c.Set("username", "developer")
+			c.Next()
+			return
+		}
+
 		// 获取Authorization header
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {

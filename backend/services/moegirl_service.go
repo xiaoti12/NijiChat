@@ -2,21 +2,21 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"net/url"
 	"os"
-	"time"
 
 	"seiyuu-chat/models"
 	"seiyuu-chat/utils"
-
-	"github.com/go-resty/resty/v2"
 )
 
 // MoegirlService 萌娘百科服务
 type MoegirlService struct {
-	apiBaseURL  string
-	restyClient *resty.Client
+	apiBaseURL string
+	httpClient *http.Client
 }
 
 // NewMoegirlService 创建萌娘百科服务实例
@@ -26,17 +26,13 @@ func NewMoegirlService() *MoegirlService {
 		apiBaseURL = "https://zh.moegirl.org.cn/api.php"
 	}
 
-	// 使用共享的HTTP客户端配置
+	// 使用 Cloudflare Workers 兼容的 HTTP 客户端
 	config := utils.DefaultHTTPConfig()
-	// 为萌娘百科API定制超时时间
-	config.Timeout = 15 * time.Second
-	config.RetryMaxWaitTime = 3 * time.Second
-
-	client := utils.NewRestyClient(config)
+	cloudflareClient := utils.NewCloudflareHTTPClient(config)
 
 	return &MoegirlService{
-		apiBaseURL:  apiBaseURL,
-		restyClient: client,
+		apiBaseURL: apiBaseURL,
+		httpClient: cloudflareClient.HTTPClient(),
 	}
 }
 
@@ -58,26 +54,55 @@ func (s *MoegirlService) GetRawData(ctx context.Context, name string) (*models.M
 		} `json:"query"`
 	}
 
+	// 构建请求URL
+	u, err := url.Parse(s.apiBaseURL)
+	if err != nil {
+		return nil, fmt.Errorf("无效的API URL: %w", err)
+	}
+
+	query := u.Query()
+	query.Set("action", "query")
+	query.Set("format", "json")
+	query.Set("prop", "revisions")
+	query.Set("titles", name)
+	query.Set("rvprop", "content")
+	query.Set("rvslots", "main")
+	u.RawQuery = query.Encode()
+
 	// 记录请求日志
-	utils.LogHTTPRequest("moegirl", "GetRawData", "GET", s.apiBaseURL)
+	utils.LogHTTPRequest("moegirl", "GetRawData", "GET", u.String())
 
-	// 发送HTTP请求
-	resp, err := s.restyClient.R().
-		SetContext(ctx).
-		SetQueryParams(map[string]string{
-			"action":  "query",
-			"format":  "json",
-			"prop":    "revisions",
-			"titles":  name,
-			"rvprop":  "content",
-			"rvslots": "main",
-		}).
-		SetResult(&apiResponse).
-		Get(s.apiBaseURL)
+	// 创建请求
+	req, err := http.NewRequestWithContext(ctx, "GET", u.String(), nil)
+	if err != nil {
+		return nil, fmt.Errorf("创建请求失败: %w", err)
+	}
 
-	// 统一错误处理
-	if httpErr := utils.HandleHTTPError("moegirl", "GetRawData", resp, err); httpErr != nil {
-		return nil, httpErr
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("User-Agent", "NijiChat/1.0")
+
+	// 发送请求
+	resp, err := s.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("请求萌娘百科API失败: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// 检查响应状态
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("API响应错误，状态码: %d, 响应: %s", resp.StatusCode, string(body))
+	}
+
+	// 读取并解析响应
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("读取响应失败: %w", err)
+	}
+
+	err = json.Unmarshal(body, &apiResponse)
+	if err != nil {
+		return nil, fmt.Errorf("解析API响应失败: %w", err)
 	}
 
 	// 提取内容
@@ -108,24 +133,53 @@ func (s *MoegirlService) SearchSeiyuu(ctx context.Context, keyword string) ([]st
 	// 定义搜索响应结构
 	var searchResults []interface{}
 
+	// 构建请求URL
+	u, err := url.Parse(s.apiBaseURL)
+	if err != nil {
+		return nil, fmt.Errorf("无效的API URL: %w", err)
+	}
+
+	query := u.Query()
+	query.Set("action", "opensearch")
+	query.Set("format", "json")
+	query.Set("search", keyword)
+	query.Set("limit", "10")
+	u.RawQuery = query.Encode()
+
 	// 记录请求日志
-	utils.LogHTTPRequest("moegirl", "SearchSeiyuu", "GET", s.apiBaseURL)
+	utils.LogHTTPRequest("moegirl", "SearchSeiyuu", "GET", u.String())
 
-	// 发送HTTP请求
-	resp, err := s.restyClient.R().
-		SetContext(ctx).
-		SetQueryParams(map[string]string{
-			"action": "opensearch",
-			"format": "json",
-			"search": keyword,
-			"limit":  "10",
-		}).
-		SetResult(&searchResults).
-		Get(s.apiBaseURL)
+	// 创建请求
+	req, err := http.NewRequestWithContext(ctx, "GET", u.String(), nil)
+	if err != nil {
+		return nil, fmt.Errorf("创建请求失败: %w", err)
+	}
 
-	// 统一错误处理
-	if httpErr := utils.HandleHTTPError("moegirl", "SearchSeiyuu", resp, err); httpErr != nil {
-		return nil, httpErr
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("User-Agent", "NijiChat/1.0")
+
+	// 发送请求
+	resp, err := s.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("搜索萌娘百科失败: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// 检查响应状态
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("搜索API响应错误，状态码: %d, 响应: %s", resp.StatusCode, string(body))
+	}
+
+	// 读取并解析响应
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("读取响应失败: %w", err)
+	}
+
+	err = json.Unmarshal(body, &searchResults)
+	if err != nil {
+		return nil, fmt.Errorf("解析搜索响应失败: %w", err)
 	}
 
 	if len(searchResults) < 2 {
