@@ -40,24 +40,43 @@
         </div>
       </div>
 
-      <!-- AI参数设置 -->
+      <!-- AI模型配置 -->
       <div class="panel-section">
         <div class="section-header">
-          <h4 class="section-title">AI参数</h4>
+          <h4 class="section-title">AI模型配置</h4>
+          <button @click="showAIManager = true" class="manage-btn" title="管理AI模型">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311c.446.82.023 1.841-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413 1.4-2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872l-.1-.34zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z"/>
+            </svg>
+          </button>
         </div>
 
-        <div class="settings-list">
+        <!-- 未配置AI模型时的提示 -->
+        <div v-if="!hasAnyModels" class="no-models-tip">
+          <div class="tip-icon">🤖</div>
+          <p class="tip-text">还没有配置AI模型</p>
+          <button @click="showAIManager = true" class="btn btn-primary btn-sm">
+            立即配置
+          </button>
+        </div>
+
+        <!-- 已配置AI模型时的设置 -->
+        <div v-else class="settings-list">
           <!-- 模型选择 -->
           <div class="setting-item">
             <label class="setting-label">
-              <span>AI模型</span>
-              <span class="setting-value">Mock模式</span>
+              <span>当前模型</span>
+              <span class="setting-value">{{ selectedModel?.name || '未选择' }}</span>
             </label>
-            <select v-model="settings.model" class="setting-select">
-              <option value="mock">Mock模式（演示）</option>
-              <option value="openai">OpenAI GPT</option>
-              <option value="claude">Claude</option>
-              <option value="gemini">Gemini</option>
+            <select v-model="selectedModelId" class="setting-select">
+              <option value="">请选择AI模型</option>
+              <option
+                v-for="model in availableChatModels"
+                :key="model.id"
+                :value="model.id"
+              >
+                {{ model.name }} ({{ model.model_name }})
+              </option>
             </select>
           </div>
 
@@ -188,12 +207,26 @@
         </div>
       </div>
     </div>
+
+    <!-- AI模型管理器弹窗 -->
+    <div v-if="showAIManager" class="ai-manager-overlay" @click="showAIManager = false">
+      <div class="ai-manager-container" @click.stop>
+        <AIModelManager />
+        <div class="manager-footer">
+          <button @click="showAIManager = false" class="btn btn-secondary">
+            关闭
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue'
+import { useAIModelStore } from '@/stores/aiModelStore'
 import type { Room, Seiyuu } from '@/types'
+import AIModelManager from './AIModelManager.vue'
 
 // Props
 const props = defineProps<{
@@ -208,12 +241,32 @@ const emit = defineEmits<{
   updateSettings: [settings: any]
 }>()
 
+// Store
+const aiModelStore = useAIModelStore()
+
+// 状态
+const showAIManager = ref(false)
+const selectedModelId = ref<string | null>(null)
+
 // 设置
 const settings = reactive({
-  model: 'mock',
+  model_id: selectedModelId.value,
   temperature: 0.7,
   maxTokens: 200,
   contextLength: 10
+})
+
+// 计算属性
+const selectedModel = computed(() => {
+  return selectedModelId.value ? aiModelStore.getModel(selectedModelId.value) : null
+})
+
+const availableChatModels = computed(() => {
+  return aiModelStore.chatModels
+})
+
+const hasAnyModels = computed(() => {
+  return aiModelStore.models.length > 0
 })
 
 // 历史记录
@@ -388,7 +441,7 @@ function handleSelectHistory(item: any) {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #fead00, #ff791b);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -418,8 +471,8 @@ function handleSelectHistory(item: any) {
 .tag {
   font-size: 10px;
   padding: 2px 6px;
-  background: rgba(102, 126, 234, 0.1);
-  color: #667eea;
+  background: rgba(254, 173, 0, 0.1);
+  color: #fead00;
   border-radius: 4px;
   font-weight: 500;
 }
@@ -444,7 +497,7 @@ function handleSelectHistory(item: any) {
 }
 
 .setting-value {
-  color: #667eea;
+  color: #fead00;
   font-weight: 600;
 }
 
@@ -461,13 +514,13 @@ function handleSelectHistory(item: any) {
 }
 
 .setting-select:hover {
-  border-color: #667eea;
+  border-color: #fead00;
 }
 
 .setting-select:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: #fead00;
+  box-shadow: 0 0 0 3px rgba(254, 173, 0, 0.1);
 }
 
 .setting-slider {
@@ -485,14 +538,14 @@ function handleSelectHistory(item: any) {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #667eea;
+  background: #fead00;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .setting-slider::-webkit-slider-thumb:hover {
   transform: scale(1.1);
-  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.2);
+  box-shadow: 0 0 0 4px rgba(254, 173, 0, 0.2);
 }
 
 .slider-labels {
@@ -507,7 +560,7 @@ function handleSelectHistory(item: any) {
 .apply-btn {
   width: 100%;
   padding: 10px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #fead00, #ff791b);
   color: white;
   border: none;
   border-radius: 8px;
@@ -523,7 +576,7 @@ function handleSelectHistory(item: any) {
 
 .apply-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 4px 12px rgba(254, 173, 0, 0.4);
 }
 
 /* 快捷操作 */
@@ -550,9 +603,9 @@ function handleSelectHistory(item: any) {
 }
 
 .quick-action-btn:hover {
-  border-color: #667eea;
-  background: rgba(102, 126, 234, 0.05);
-  color: #667eea;
+  border-color: #fead00;
+  background: rgba(254, 173, 0, 0.05);
+  color: #fead00;
 }
 
 /* 历史记录 */
@@ -574,13 +627,13 @@ function handleSelectHistory(item: any) {
 }
 
 .history-item:hover {
-  border-color: #667eea;
-  background: rgba(102, 126, 234, 0.05);
+  border-color: #fead00;
+  background: rgba(254, 173, 0, 0.05);
 }
 
 .history-item.active {
-  border-color: #667eea;
-  background: rgba(102, 126, 234, 0.1);
+  border-color: #fead00;
+  background: rgba(254, 173, 0, 0.1);
 }
 
 .history-time {
@@ -636,6 +689,87 @@ function handleSelectHistory(item: any) {
   background: #9ca3af;
 }
 
+/* 管理按钮 */
+.manage-btn {
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+  transition: all 0.2s;
+}
+
+.manage-btn:hover {
+  background: #f3f4f6;
+  color: #fead00;
+}
+
+/* 无模型提示 */
+.no-models-tip {
+  text-align: center;
+  padding: 20px 16px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.tip-icon {
+  font-size: 24px;
+  margin-bottom: 8px;
+  opacity: 0.6;
+}
+
+.tip-text {
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 12px;
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+/* AI模型管理器弹窗 */
+.ai-manager-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.ai-manager-container {
+  background: white;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 700px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+}
+
+.manager-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: flex-end;
+  background: #fafafa;
+}
+
 /* 响应式 */
 @media (max-width: 1400px) {
   .chat-right-panel {
@@ -651,6 +785,11 @@ function handleSelectHistory(item: any) {
 @media (max-width: 768px) {
   .chat-right-panel {
     display: none;
+  }
+
+  .ai-manager-container {
+    max-width: 95%;
+    max-height: 90vh;
   }
 }
 </style>

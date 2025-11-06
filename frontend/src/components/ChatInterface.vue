@@ -308,14 +308,14 @@ watch(
   height: 48px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid rgba(102, 126, 234, 0.1);
+  border: 2px solid rgba(254, 173, 0, 0.1);
 }
 
 .avatar-placeholder {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #fead00, #ff791b);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -445,7 +445,7 @@ watch(
 .user-avatar {
   width: 32px;
   height: 32px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #fead00, #ff791b);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -488,10 +488,10 @@ watch(
 }
 
 .user-bubble {
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #fead00, #ff791b);
   color: white;
   border-radius: 16px 16px 4px 16px;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 2px 8px rgba(254, 173, 0, 0.3);
   padding: 12px 16px;
   font-size: 14px;
   line-height: 1.4;
@@ -566,8 +566,8 @@ watch(
 }
 
 .input-wrapper.focused {
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: #fead00;
+  box-shadow: 0 0 0 3px rgba(254, 173, 0, 0.1);
   background: white;
 }
 
@@ -592,7 +592,7 @@ watch(
   width: 32px;
   height: 32px;
   border: none;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #fead00, #ff791b);
   border-radius: 6px;
   cursor: pointer;
   display: flex;
@@ -605,7 +605,7 @@ watch(
 
 .send-btn:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 4px 12px rgba(254, 173, 0, 0.4);
 }
 
 .send-btn:disabled {

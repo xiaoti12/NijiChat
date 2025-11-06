@@ -19,7 +19,7 @@ export interface AIModelConfig {
 }
 
 // AI模型类型
-export type AIModelType = 'gemini' | 'openai' | 'claude' | 'custom'
+export type AIModelType = 'gemini' | 'openai'
 
 // AI调用选项
 export interface AICallOptions {
@@ -62,11 +62,6 @@ export interface OpenAIConfig extends AIModelConfig {
   model_name: 'gpt-3.5-turbo' | 'gpt-4' | 'gpt-4-turbo' | string
 }
 
-// Claude API配置
-export interface ClaudeConfig extends AIModelConfig {
-  type: 'claude'
-  model_name: 'claude-3-opus' | 'claude-3-sonnet' | 'claude-3-haiku' | string
-}
 
 // AI模型测试结果
 export interface AIModelTestResult {

@@ -21,10 +21,39 @@
     <div v-else class="empty-state">
       <div class="empty-icon">💬</div>
       <h2 class="empty-title">欢迎使用 NijiChat</h2>
-      <p class="empty-text">选择一个对话开始聊天，或创建新的对话 </p>
-      <button @click="handleNewConversation" class="btn btn-primary btn-large">
-        开始新对话
-      </button>
+
+      <!-- AI未配置提示 -->
+      <div v-if="!hasChatModels" class="ai-setup-notice">
+        <div class="notice-icon">🤖</div>
+        <p class="notice-text">要开始聊天，请先配置AI模型</p>
+        <div class="action-buttons">
+          <button @click="showAIManager = true" class="btn btn-primary btn-large">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" class="btn-icon">
+              <path d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311c.446.82.023 1.841-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413 1.4-2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872l-.1-.34zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z"/>
+            </svg>
+            配置AI模型
+          </button>
+          <button @click="handleNewConversation" class="btn btn-secondary btn-large">
+            浏览声优库
+          </button>
+        </div>
+      </div>
+
+      <!-- AI已配置，可以开始聊天 -->
+      <div v-else class="ready-state">
+        <p class="empty-text">选择一个对话开始聊天，或创建新的对话</p>
+        <div class="action-buttons">
+          <button @click="handleNewConversation" class="btn btn-primary btn-large">
+            开始新对话
+          </button>
+          <button @click="showAIManager = true" class="btn btn-secondary btn-large">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" class="btn-icon">
+              <path d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311c.446.82.023 1.841-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413 1.4-2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872l-.1-.34zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z"/>
+            </svg>
+            管理AI模型
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- 右侧设置面板 -->
@@ -36,6 +65,18 @@
       @toggle="toggleRightPanel"
       @update-settings="handleUpdateSettings"
     />
+
+    <!-- AI模型管理器弹窗 -->
+    <div v-if="showAIManager" class="ai-manager-overlay" @click="showAIManager = false">
+      <div class="ai-manager-container" @click.stop>
+        <AIModelManager />
+        <div class="manager-footer">
+          <button @click="showAIManager = false" class="btn btn-secondary">
+            关闭
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -44,22 +85,26 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useChatStore } from '@/stores/chatStore'
 import { useSeiyuuStore } from '@/stores/seiyuuStore'
+import { useAIModelStore } from '@/stores/aiModelStore'
 import { mockService } from '@/services/mockService'
 import type { Room, Message, Seiyuu } from '@/types'
 
-// 导入组件（稍后创建）
+// 导入组件
 import ChatSidebar from '@/components/ChatSidebar.vue'
 import ChatInterface from '@/components/ChatInterface.vue'
 import ChatRightPanel from '@/components/ChatRightPanel.vue'
+import AIModelManager from '@/components/AIModelManager.vue'
 
 const router = useRouter()
 const route = useRoute()
 const chatStore = useChatStore()
 const seiyuuStore = useSeiyuuStore()
+const aiModelStore = useAIModelStore()
 
 // 状态
 const rightPanelCollapsed = ref(false)
 const loading = ref(false)
+const showAIManager = ref(false)
 
 // 计算属性
 const conversations = computed(() => chatStore.conversations)
@@ -75,6 +120,10 @@ const currentSeiyuu = computed(() => {
   }
   return null
 })
+
+// AI配置状态
+const hasAIModels = computed(() => aiModelStore.models.length > 0)
+const hasChatModels = computed(() => aiModelStore.chatModels.length > 0)
 
 // 事件处理
 function handleSelectConversation(roomId: string) {
@@ -201,12 +250,12 @@ onMounted(async () => {
 /* CSS 变量定义 */
 :root {
   /* 品牌渐变色 */
-  --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --gradient-primary: linear-gradient(135deg, #fead00 0%, #ff791b 100%);
 
   /* 主色 */
-  --color-primary: #667eea;
-  --color-primary-dark: #5568d3;
-  --color-primary-light: rgba(102, 126, 234, 0.1);
+  --color-primary: #fead00;
+  --color-primary-dark: #e6950d;
+  --color-primary-light: rgba(254, 173, 0, 0.1);
 
   /* 文本颜色 */
   --text-primary: #1f2937;
@@ -311,14 +360,14 @@ onMounted(async () => {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #fead00, #ff791b);
   color: white;
   font-size: var(--font-size-md);
 }
 
 .btn-primary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 4px 12px rgba(254, 173, 0, 0.4);
 }
 
 .btn-large {
@@ -326,10 +375,115 @@ onMounted(async () => {
   font-size: var(--font-size-lg);
 }
 
+.btn-secondary {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.btn-secondary:hover {
+  background: #e5e7eb;
+  border-color: #9ca3af;
+}
+
+.btn-icon {
+  margin-right: 6px;
+}
+
+/* AI配置提示样式 */
+.ai-setup-notice {
+  margin-top: 16px;
+  padding: 24px;
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.notice-icon {
+  font-size: 32px;
+  margin-bottom: 12px;
+}
+
+.notice-text {
+  font-size: 14px;
+  color: #92400e;
+  margin-bottom: 20px;
+  font-weight: 500;
+}
+
+.ready-state {
+  margin-top: 16px;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* AI模型管理器弹窗 */
+.ai-manager-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.ai-manager-container {
+  background: white;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 700px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+}
+
+.manager-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: flex-end;
+  background: #fafafa;
+}
+
 /* 响应式设计 */
 @media (max-width: 768px) {
   .chat-page {
     flex-direction: column;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .btn-large {
+    width: 100%;
+  }
+
+  .ai-manager-container {
+    max-width: 95%;
+    max-height: 90vh;
+  }
+
+  .empty-state {
+    padding: 32px 20px;
+  }
+
+  .ai-setup-notice {
+    padding: 20px 16px;
   }
 }
 
