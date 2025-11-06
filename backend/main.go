@@ -40,7 +40,10 @@ func main() {
 
 	// 初始化服务层
 	seiyuuService := services.NewSeiyuuService(db, cache)
-	aiService := services.NewAIService()
+	aiService, err := services.NewAIService()
+	if err != nil {
+		log.Fatalf("Failed to initialize AI service: %v", err)
+	}
 	schedulerService := services.NewSchedulerService(seiyuuService, aiService)
 	moegirlService := services.NewMoegirlService()
 
