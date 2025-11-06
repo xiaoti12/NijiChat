@@ -1,0 +1,23 @@
+{
+    "name": "nijichat-backend",
+    "version": "1.0.0",
+    "description": "NijiChat 后端 - 基于Golang的Cloudflare Workers服务",
+    "private": true,
+    "scripts": {
+        "build": "go run github.com/syumai/workers/cmd/workers-assets-gen -mode=go && GOOS=js GOARCH=wasm go build -o ./build/app.wasm .",
+        "dev": "wrangler dev",
+        "start": "wrangler dev",
+        "deploy": "wrangler deploy"
+    },
+    "keywords": [
+        "golang",
+        "cloudflare-workers",
+        "ai-chat",
+        "seiyuu",
+        "backend"
+    ],
+    "author": "xiaoti",
+    "devDependencies": {
+        "wrangler": "^4.44.0"
+    }
+}

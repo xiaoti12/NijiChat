@@ -1,15 +1,10 @@
 {
   // Cloudflare Workers 配置文件
   // 使用 JSONC 格式支持注释
-
+  "$schema": "node_modules/wrangler/config-schema.json",
   "name": "seiyuu-chat-backend",
-  "main": "main.go",
-  "compatibility_date": "2024-01-01",
-  "compatibility_flags": ["nodejs_compat"],
-
-  // Worker 设置
-  "workers_dev": true,
-
+  "main": "./build/worker.mjs",
+  "compatibility_date": "2025-11-06",
   // D1 数据库绑定
   "d1_databases": [
     {
@@ -20,22 +15,19 @@
       "preview_database_id": "your-preview-d1-database-id"
     }
   ],
-
   // KV 命名空间绑定
   "kv_namespaces": [
     {
-      "binding": "CACHE_KV",
+      "binding": "SEIYUU_KV",
       "id": "your-kv-namespace-id",
       "preview_id": "your-preview-kv-namespace-id"
     }
   ],
-
   // 环境变量配置
   "vars": {
     "ENVIRONMENT": "development",
     "MOEGIRL_API_BASE_URL": "https://zh.moegirl.org.cn/api.php"
   },
-
   // 生产环境配置
   "env": {
     "production": {
@@ -56,12 +48,11 @@
       ],
       "kv_namespaces": [
         {
-          "binding": "CACHE_KV",
+          "binding": "SEIYUU_KV",
           "id": "your-production-kv-namespace-id"
         }
       ]
     },
-
     "staging": {
       "name": "seiyuu-chat-backend-staging",
       "vars": {
@@ -77,37 +68,24 @@
       ],
       "kv_namespaces": [
         {
-          "binding": "CACHE_KV",
+          "binding": "SEIYUU_KV",
           "id": "your-staging-kv-namespace-id"
         }
       ]
     }
   },
-
   // 构建配置
   "build": {
-    "command": "go build -o worker main.go",
-    "watch_dirs": [
-      "handlers",
-      "services",
-      "models",
-      "middleware",
-      "database",
-      "utils"
-    ]
+    "command": "npm run build"
   },
-
   // 观察者配置（开发模式）
   "observability": {
-    "enabled": true,
-    "head_sampling_rate": 1
+    "enabled": true
   },
-
   // 资源限制
   "limits": {
     "cpu_ms": 50
   },
-
   // 路由配置
   "routes": [
     {
@@ -115,7 +93,6 @@
       "zone_name": "nijichat.com"
     }
   ],
-
   // 触发器配置（Cron 定时任务等）
   "triggers": {
     "crons": [
@@ -123,10 +100,8 @@
       // "0 2 * * *"
     ]
   },
-
   // 日志配置
   "logpush": false,
-
   // 尾部消费者（用于实时日志）
   "tail_consumers": []
 }

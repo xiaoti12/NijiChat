@@ -18,9 +18,6 @@ import (
 )
 
 func main() {
-	// 设置Gin为发布模式
-	gin.SetMode(gin.ReleaseMode)
-
 	// 创建Gin路由器
 	router := gin.New()
 
@@ -37,7 +34,7 @@ func main() {
 	}
 	defer db.Close()
 
-	cache, err := database.NewKVClient("CACHE_KV")
+	cache, err := database.NewKVClient("SEIYUU_KV")
 	if err != nil {
 		log.Fatalf("Failed to connect to KV namespace: %v", err)
 	}
