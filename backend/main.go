@@ -4,7 +4,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 
@@ -85,7 +84,7 @@ func setupRoutes(
 	// 管理员接口（需要认证）
 	admin := api.Group("/admin")
 	admin.Use(middleware.AdminAuthMiddleware())
-	admin.Use(middleware.AdminRateLimitMiddleware())
+	// admin.Use(middleware.AdminRateLimitMiddleware())
 	{
 		// 管理员信息
 		admin.GET("/profile", adminHandler.GetProfile)
@@ -110,10 +109,4 @@ func setupRoutes(
 		})
 	})
 
-	// 打印已注册的路由（开发环境）
-	fmt.Println("=== Registered Routes ===")
-	for _, route := range router.Routes() {
-		fmt.Printf("%s %s\n", route.Method, route.Path)
-	}
-	fmt.Println("========================")
 }

@@ -32,3 +32,5 @@ dist-ssr
 
 ## worker builds
 **/build/
+
+.wrangler
