@@ -1,142 +1,264 @@
 <template>
-  <div class="chat-home">
-    <!-- 顶部导航栏 -->
-    <div class="chat-header">
-      <h1 class="chat-title">NijiChat</h1>
-      <div class="chat-actions">
-        <button @click="goToSeiyuuLibrary" class="btn btn-primary">
-          <span class="icon">+</span>
-          选择声优
-        </button>
-      </div>
+  <div class="chat-page">
+    <!-- 左侧对话列表 -->
+    <ChatSidebar
+      :conversations="conversations"
+      :current-room-id="currentRoomId"
+      @select-conversation="handleSelectConversation"
+      @new-conversation="handleNewConversation"
+    />
+
+    <!-- 中间聊天区域 -->
+    <ChatInterface
+      v-if="currentRoom"
+      :room="currentRoom"
+      :messages="currentMessages"
+      :seiyuu="currentSeiyuu"
+      @send-message="handleSendMessage"
+    />
+
+    <!-- 空状态 -->
+    <div v-else class="empty-state">
+      <div class="empty-icon">💬</div>
+      <h2 class="empty-title">欢迎使用 NijiChat</h2>
+      <p class="empty-text">选择一个对话开始聊天，或创建新的对话 </p>
+      <button @click="handleNewConversation" class="btn btn-primary btn-large">
+        开始新对话
+      </button>
     </div>
 
-    <!-- 主聊天区域 -->
-    <div class="chat-main">
-      <!-- 空状态 -->
-      <div v-if="!selectedSeiyuu" class="empty-state">
-        <div class="empty-icon">💬</div>
-        <h2>欢迎使用 NijiChat</h2>
-        <p>选择一位声优开始你的专属对话</p>
-        <button @click="goToSeiyuuLibrary" class="btn btn-primary btn-large">
-          浏览声优库
-        </button>
-      </div>
-
-      <!-- 聊天界面 -->
-      <div v-else class="chat-interface">
-        <!-- 选中的声优信息 -->
-        <div class="selected-seiyuu">
-          <div class="seiyuu-avatar">
-            <img :src="selectedSeiyuu.avatar_url || '/default-avatar.png'" :alt="selectedSeiyuu.name" />
-          </div>
-          <div class="seiyuu-info">
-            <h3>{{ selectedSeiyuu.name }}</h3>
-            <p>开始和 {{ selectedSeiyuu.name }} 对话吧！</p>
-          </div>
-        </div>
-
-        <!-- 聊天消息区域 -->
-        <div class="chat-messages">
-          <div class="message-placeholder">
-            <p>聊天功能正在开发中...</p>
-          </div>
-        </div>
-
-        <!-- 输入区域 -->
-        <div class="chat-input">
-          <div class="input-wrapper">
-            <input
-              type="text"
-              placeholder="输入消息..."
-              class="message-input"
-              disabled
-            />
-            <button class="send-btn" disabled>
-              发送
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <!-- 右侧设置面板 -->
+    <ChatRightPanel
+      v-if="currentRoom"
+      :room="currentRoom"
+      :seiyuu="currentSeiyuu"
+      :collapsed="rightPanelCollapsed"
+      @toggle="toggleRightPanel"
+      @update-settings="handleUpdateSettings"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useChatStore } from '@/stores/chatStore'
 import { useSeiyuuStore } from '@/stores/seiyuuStore'
-import type { Seiyuu } from '@/types'
+import { mockService } from '@/services/mockService'
+import type { Room, Message, Seiyuu } from '@/types'
+
+// 导入组件（稍后创建）
+import ChatSidebar from '@/components/ChatSidebar.vue'
+import ChatInterface from '@/components/ChatInterface.vue'
+import ChatRightPanel from '@/components/ChatRightPanel.vue'
 
 const router = useRouter()
 const route = useRoute()
+const chatStore = useChatStore()
 const seiyuuStore = useSeiyuuStore()
 
-const selectedSeiyuu = ref<Seiyuu | null>(null)
+// 状态
+const rightPanelCollapsed = ref(false)
+const loading = ref(false)
 
-// 跳转到声优库
-function goToSeiyuuLibrary() {
+// 计算属性
+const conversations = computed(() => chatStore.conversations)
+const currentRoomId = computed(() => chatStore.currentRoomId)
+const currentRoom = computed(() => chatStore.currentRoom)
+const currentMessages = computed(() => chatStore.currentMessages)
+
+const currentSeiyuu = computed(() => {
+  if (!currentRoom.value) return null
+  // 1v1 对话获取对应的声优
+  if (currentRoom.value.type === '1v1' && currentRoom.value.participants.length === 1) {
+    return seiyuuStore.getSeiyuuById(currentRoom.value.participants[0])
+  }
+  return null
+})
+
+// 事件处理
+function handleSelectConversation(roomId: string) {
+  chatStore.setCurrentRoom(roomId)
+}
+
+function handleNewConversation() {
   router.push({ name: 'SeiyuuLibrary' })
 }
 
-// 从路由参数或查询参数中获取选中的声优
-onMounted(() => {
-  // 如果有 seiyuuId 查询参数，尝试获取声优信息
-  const seiyuuId = route.query.seiyuuId as string
-  if (seiyuuId) {
-    selectedSeiyuu.value = seiyuuStore.getSeiyuuById(seiyuuId) || null
+async function handleSendMessage(content: string) {
+  if (!currentRoom.value || !currentSeiyuu.value) return
+
+  try {
+    loading.value = true
+
+    // 添加用户消息
+    const userMessage = chatStore.addMessage({
+      room_id: currentRoom.value.id,
+      sender_id: 'user-1',
+      sender_name: '用户',
+      content
+    })
+
+    // 生成AI回复
+    const aiReply = await mockService.generateAIReply(
+      currentSeiyuu.value.name,
+      content,
+      chatStore.getRecentMessages(currentRoom.value.id, 10)
+    )
+
+    // 添加AI回复消息
+    chatStore.addMessage({
+      room_id: currentRoom.value.id,
+      sender_id: currentSeiyuu.value.id,
+      sender_name: currentSeiyuu.value.name,
+      sender_avatar: currentSeiyuu.value.avatar_url,
+      content: aiReply
+    })
+
+  } catch (error) {
+    console.error('发送消息失败:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
+function toggleRightPanel() {
+  rightPanelCollapsed.value = !rightPanelCollapsed.value
+}
+
+function handleUpdateSettings(settings: any) {
+  // 处理设置更新
+  console.log('更新设置:', settings)
+}
+
+// 初始化
+onMounted(async () => {
+  try {
+    // 加载mock数据
+    if (mockService.isMockMode()) {
+      const response = await mockService.getSeiyuuList()
+      if (response.success && response.data) {
+        seiyuuStore.setSeiyuuList(response.data)
+      }
+
+      // 创建初始对话
+      const initialConversations = mockService.generateInitialConversations()
+      for (const conv of initialConversations) {
+        const seiyuu = seiyuuStore.getSeiyuuById(conv.seiyuuId)
+        if (seiyuu) {
+          const room = chatStore.createRoom({
+            type: '1v1',
+            name: seiyuu.name,
+            avatar: seiyuu.avatar_url,
+            participants: [seiyuu.id],
+            unread_count: 0
+          })
+
+          // 添加最后一条消息
+          chatStore.addMessage({
+            room_id: room.id,
+            sender_id: seiyuu.id,
+            sender_name: seiyuu.name,
+            sender_avatar: seiyuu.avatar_url,
+            content: conv.lastMessage
+          })
+        }
+      }
+    }
+
+    // 处理路由参数
+    const seiyuuId = route.query.seiyuuId as string
+    if (seiyuuId) {
+      // 查找或创建该声优的对话
+      const existingRoom = chatStore.rooms.find(room =>
+        room.type === '1v1' && room.participants.includes(seiyuuId)
+      )
+
+      if (existingRoom) {
+        chatStore.setCurrentRoom(existingRoom.id)
+      } else {
+        // 创建新对话
+        const seiyuu = seiyuuStore.getSeiyuuById(seiyuuId)
+        if (seiyuu) {
+          const room = chatStore.createRoom({
+            type: '1v1',
+            name: seiyuu.name,
+            avatar: seiyuu.avatar_url,
+            participants: [seiyuu.id],
+            unread_count: 0
+          })
+          chatStore.setCurrentRoom(room.id)
+        }
+      }
+    }
+  } catch (error) {
+    console.error('初始化失败:', error)
   }
 })
 </script>
 
 <style scoped>
-.chat-home {
-  width: 100%;
-  height: 100vh;
+/* CSS 变量定义 */
+:root {
+  /* 品牌渐变色 */
+  --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+  /* 主色 */
+  --color-primary: #667eea;
+  --color-primary-dark: #5568d3;
+  --color-primary-light: rgba(102, 126, 234, 0.1);
+
+  /* 文本颜色 */
+  --text-primary: #1f2937;
+  --text-secondary: #374151;
+  --text-muted: #6b7280;
+
+  /* 背景颜色 */
+  --bg-primary: #ffffff;
+  --bg-secondary: #fafafa;
+  --bg-tertiary: #f9fafb;
+
+  /* 边框颜色 */
+  --border-light: #e5e7eb;
+
+  /* 间距 */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 20px;
+  --spacing-2xl: 24px;
+  --spacing-3xl: 32px;
+
+  /* 圆角 */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  /* 字体 */
+  --font-size-sm: 13px;
+  --font-size-md: 14px;
+  --font-size-lg: 16px;
+  --font-size-xl: 18px;
+  --font-size-2xl: 20px;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* 过渡 */
+  --transition-normal: all 0.2s ease;
+}
+
+/* 三栏布局 */
+.chat-page {
   display: flex;
-  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
   background: var(--bg-secondary);
 }
 
-/* 顶部导航栏 */
-.chat-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--spacing-lg) var(--spacing-xl);
-  background: var(--bg-primary);
-  border-bottom: 1px solid var(--border-color);
-}
-
-.chat-title {
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-bold);
-  background: var(--gradient-primary);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  margin: 0;
-}
-
-.chat-actions .btn {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-}
-
-.icon {
-  font-size: var(--font-size-lg);
-  font-weight: bold;
-}
-
-/* 主聊天区域 */
-.chat-main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-/* 空状态 */
+/* 空状态样式 */
 .empty-state {
   flex: 1;
   display: flex;
@@ -144,135 +266,34 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: var(--spacing-3xl);
+  padding: 48px;
+  background: var(--bg-primary);
 }
 
 .empty-icon {
-  font-size: 4rem;
-  margin-bottom: var(--spacing-xl);
-}
-
-.empty-state h2 {
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-semibold);
-  color: var(--text-primary);
-  margin-bottom: var(--spacing-md);
-}
-
-.empty-state p {
-  color: var(--text-muted);
-  font-size: var(--font-size-lg);
-  margin-bottom: var(--spacing-2xl);
-}
-
-.btn-large {
-  padding: var(--spacing-md) var(--spacing-xl);
-  font-size: var(--font-size-lg);
-}
-
-/* 聊天界面 */
-.chat-interface {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-/* 选中的声优信息 */
-.selected-seiyuu {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-  padding: var(--spacing-lg) var(--spacing-xl);
-  background: var(--bg-primary);
-  border-bottom: 1px solid var(--border-color);
-}
-
-.seiyuu-avatar {
-  width: 48px;
-  height: 48px;
+  width: 64px;
+  height: 64px;
+  background: #f3f4f6;
   border-radius: 50%;
-  overflow: hidden;
-}
-
-.seiyuu-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.seiyuu-info h3 {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
-  color: var(--text-primary);
-  margin-bottom: var(--spacing-xs);
-}
-
-.seiyuu-info p {
-  color: var(--text-muted);
-  font-size: var(--font-size-sm);
-}
-
-/* 聊天消息区域 */
-.chat-messages {
-  flex: 1;
-  padding: var(--spacing-xl);
-  overflow-y: auto;
-}
-
-.message-placeholder {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100%;
-  color: var(--text-muted);
+  margin-bottom: 16px;
+  font-size: 24px;
+  color: #9ca3af;
 }
 
-/* 输入区域 */
-.chat-input {
-  padding: var(--spacing-lg) var(--spacing-xl);
-  background: var(--bg-primary);
-  border-top: 1px solid var(--border-color);
-}
-
-.input-wrapper {
-  display: flex;
-  gap: var(--spacing-md);
-  align-items: center;
-}
-
-.message-input {
-  flex: 1;
-  padding: var(--spacing-md);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  background: var(--bg-secondary);
+.empty-title {
+  font-size: 18px;
+  font-weight: var(--font-weight-semibold);
   color: var(--text-primary);
-  font-size: var(--font-size-md);
+  margin-bottom: 8px;
 }
 
-.message-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-}
-
-.send-btn {
-  padding: var(--spacing-md) var(--spacing-lg);
-  background: var(--color-primary);
-  color: white;
-  border: none;
-  border-radius: var(--radius-md);
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-  transition: var(--transition-normal);
-}
-
-.send-btn:hover:not(:disabled) {
-  background: var(--color-primary-dark);
-}
-
-.send-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.empty-text {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-bottom: 24px;
 }
 
 /* 按钮样式 */
@@ -284,23 +305,43 @@ onMounted(() => {
   cursor: pointer;
   transition: var(--transition-normal);
   text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-primary {
-  background: var(--color-primary);
+  background: linear-gradient(135deg, #667eea, #764ba2);
   color: white;
+  font-size: var(--font-size-md);
 }
 
 .btn-primary:hover {
-  background: var(--color-primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
-.btn-secondary {
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
+.btn-large {
+  padding: 10px 24px;
+  font-size: var(--font-size-lg);
 }
 
-.btn-secondary:hover {
-  background: var(--bg-quaternary);
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .chat-page {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 1400px) {
+  /* 右侧面板浮动 */
+  .chat-page :deep(.chat-right-panel) {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 100;
+    box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
+  }
 }
 </style>
