@@ -1,20 +1,25 @@
+//go:build js && wasm
+// +build js,wasm
+
 package utils
 
 import (
+	"log"
+	"net/http"
 	"os"
 	"strconv"
 	"time"
 
-	"github.com/go-resty/resty/v2"
+	"github.com/syumai/workers/cloudflare/fetch"
 )
 
 // HTTPClientConfig HTTP客户端配置
 type HTTPClientConfig struct {
-	Timeout         time.Duration
-	RetryCount      int
-	RetryWaitTime   time.Duration
+	Timeout          time.Duration
+	RetryCount       int
+	RetryWaitTime    time.Duration
 	RetryMaxWaitTime time.Duration
-	UserAgent       string
+	UserAgent        string
 }
 
 // DefaultHTTPConfig 获取默认的HTTP配置
@@ -31,41 +36,67 @@ func DefaultHTTPConfig() *HTTPClientConfig {
 		RetryCount:       retryCount,
 		RetryWaitTime:    retryWaitTime,
 		RetryMaxWaitTime: retryMaxWaitTime,
-		UserAgent:       userAgent,
+		UserAgent:        userAgent,
 	}
 }
 
-// NewRestyClient 创建配置好的Resty客户端
-func NewRestyClient(config *HTTPClientConfig) *resty.Client {
+// CloudflareHTTPClient 专用于 Cloudflare Workers 的 HTTP 客户端包装器
+type CloudflareHTTPClient struct {
+	client *http.Client
+}
+
+// NewCloudflareHTTPClient 创建 Cloudflare Workers 兼容的 HTTP 客户端
+func NewCloudflareHTTPClient(config *HTTPClientConfig) *CloudflareHTTPClient {
 	if config == nil {
 		config = DefaultHTTPConfig()
 	}
 
-	client := resty.New()
-	client.SetTimeout(config.Timeout)
-	client.SetHeader("User-Agent", config.UserAgent)
-	client.SetRetryCount(config.RetryCount)
-	client.SetRetryWaitTime(config.RetryWaitTime)
-	client.SetRetryMaxWaitTime(config.RetryMaxWaitTime)
+	// 使用 Cloudflare Workers 的 fetch API
+	fetchClient := fetch.NewClient()
+	httpClient := fetchClient.HTTPClient(fetch.RedirectModeFollow)
 
-	// 在开发环境下启用调试模式
-	if os.Getenv("GO_ENV") == "development" {
-		client.SetDebug(true)
+	// 设置超时
+	httpClient.Timeout = config.Timeout
+
+	return &CloudflareHTTPClient{
+		client: httpClient,
 	}
-
-	return client
 }
 
-// NewRestyClientWithAuth 创建带认证的Resty客户端
-func NewRestyClientWithAuth(config *HTTPClientConfig, authToken string) *resty.Client {
-	client := NewRestyClient(config)
+// NewCloudflareHTTPClientWithAuth 创建带认证的 Cloudflare Workers HTTP 客户端
+func NewCloudflareHTTPClientWithAuth(config *HTTPClientConfig, authToken string) *CloudflareHTTPClient {
+	baseClient := NewCloudflareHTTPClient(config)
 
 	if authToken != "" {
-		client.SetHeader("Content-Type", "application/json")
-		client.SetAuthToken(authToken) // 自动设置Bearer token
+		// 包装Transport以添加认证头
+		baseClient.client.Transport = &authTransport{
+			base:      baseClient.client.Transport,
+			authToken: authToken,
+		}
 	}
 
-	return client
+	return baseClient
+}
+
+// HTTPClient 返回标准的 http.Client
+func (c *CloudflareHTTPClient) HTTPClient() *http.Client {
+	return c.client
+}
+
+// authTransport 是一个包装器，用于在每个请求中添加认证头
+type authTransport struct {
+	base      http.RoundTripper
+	authToken string
+}
+
+func (t *authTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	// 克隆请求以避免修改原始请求
+	newReq := req.Clone(req.Context())
+
+	// 添加认证头
+	newReq.Header.Set("Authorization", "Bearer "+t.authToken)
+
+	return t.base.RoundTrip(newReq)
 }
 
 // 辅助函数：从环境变量读取time.Duration，如果不存在则使用默认值
@@ -106,4 +137,11 @@ func getEnvString(key string, defaultValue string) string {
 	}
 
 	return value
+}
+
+// LogHTTPRequest 记录HTTP请求日志（仅在开发环境）
+func LogHTTPRequest(service, operation, method, url string) {
+	if os.Getenv("GO_ENV") == "development" {
+		log.Printf("[%s:%s] %s %s", service, operation, method, url)
+	}
 }

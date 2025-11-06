@@ -1,23 +1,23 @@
 package services
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
-	"time"
 
 	"seiyuu-chat/models"
 	"seiyuu-chat/utils"
-
-	"github.com/go-resty/resty/v2"
 )
 
 // AIService AI服务（调用外部AI API）
 type AIService struct {
-	apiKey      string
-	apiBaseURL  string
-	restyClient *resty.Client
+	apiKey     string
+	apiBaseURL string
+	httpClient *http.Client
 }
 
 // NewAIService 创建AI服务实例
@@ -32,18 +32,14 @@ func NewAIService() *AIService {
 		apiBaseURL = "https://api.openai.com/v1" // 默认使用OpenAI API
 	}
 
-	// 使用共享的HTTP客户端配置
+	// 使用 Cloudflare Workers 兼容的 HTTP 客户端
 	config := utils.DefaultHTTPConfig()
-	// 为AI API定制超时时间和重试配置
-	config.Timeout = 30 * time.Second
-	config.RetryMaxWaitTime = 5 * time.Second
-
-	client := utils.NewRestyClientWithAuth(config, apiKey)
+	cloudflareClient := utils.NewCloudflareHTTPClientWithAuth(config, apiKey)
 
 	return &AIService{
-		apiKey:      apiKey,
-		apiBaseURL:  apiBaseURL,
-		restyClient: client,
+		apiKey:     apiKey,
+		apiBaseURL: apiBaseURL,
+		httpClient: cloudflareClient.HTTPClient(),
 	}
 }
 
@@ -74,20 +70,48 @@ func (s *AIService) CallLightweightAI(ctx context.Context, prompt string) (strin
 		} `json:"error"`
 	}
 
+	// 序列化请求体
+	jsonBody, err := json.Marshal(requestBody)
+	if err != nil {
+		return "", fmt.Errorf("序列化请求体失败: %w", err)
+	}
+
 	// 记录请求日志
 	apiURL := s.apiBaseURL + "/chat/completions"
 	utils.LogHTTPRequest("ai", "CallLightweightAI", "POST", apiURL)
 
-	// 发送HTTP请求
-	resp, err := s.restyClient.R().
-		SetContext(ctx).
-		SetBody(requestBody).
-		SetResult(&response).
-		Post(apiURL)
+	// 创建请求
+	req, err := http.NewRequestWithContext(ctx, "POST", apiURL, bytes.NewBuffer(jsonBody))
+	if err != nil {
+		return "", fmt.Errorf("创建请求失败: %w", err)
+	}
 
-	// 统一错误处理
-	if httpErr := utils.HandleHTTPError("ai", "CallLightweightAI", resp, err); httpErr != nil {
-		return "", httpErr
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("User-Agent", "NijiChat/1.0")
+
+	// 发送请求
+	resp, err := s.httpClient.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("调用AI API失败: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// 检查响应状态
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		body, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("AI API响应错误，状态码: %d, 响应: %s", resp.StatusCode, string(body))
+	}
+
+	// 读取并解析响应
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("读取响应失败: %w", err)
+	}
+
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		return "", fmt.Errorf("解析AI响应失败: %w", err)
 	}
 
 	// 检查API返回的业务错误
