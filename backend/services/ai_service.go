@@ -1,23 +1,23 @@
 package services
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"time"
 
 	"seiyuu-chat/models"
+	"seiyuu-chat/utils"
+
+	"github.com/go-resty/resty/v2"
 )
 
 // AIService AI服务（调用外部AI API）
 type AIService struct {
-	apiKey     string
-	apiBaseURL string
-	httpClient *http.Client
+	apiKey      string
+	apiBaseURL  string
+	restyClient *resty.Client
 }
 
 // NewAIService 创建AI服务实例
@@ -27,18 +27,29 @@ func NewAIService() *AIService {
 		apiKey = "dev-ai-key" // 开发环境默认值
 	}
 
+	apiBaseURL := os.Getenv("AI_API_BASE_URL")
+	if apiBaseURL == "" {
+		apiBaseURL = "https://api.openai.com/v1" // 默认使用OpenAI API
+	}
+
+	// 使用共享的HTTP客户端配置
+	config := utils.DefaultHTTPConfig()
+	// 为AI API定制超时时间和重试配置
+	config.Timeout = 30 * time.Second
+	config.RetryMaxWaitTime = 5 * time.Second
+
+	client := utils.NewRestyClientWithAuth(config, apiKey)
+
 	return &AIService{
-		apiKey:     apiKey,
-		apiBaseURL: "https://api.openai.com/v1", // 示例，实际应该从环境变量读取
-		httpClient: &http.Client{
-			Timeout: 30 * time.Second,
-		},
+		apiKey:      apiKey,
+		apiBaseURL:  apiBaseURL,
+		restyClient: client,
 	}
 }
 
 // CallLightweightAI 调用轻量级AI模型（用于调度和资料处理）
 func (s *AIService) CallLightweightAI(ctx context.Context, prompt string) (string, error) {
-	// 构建请求
+	// 构建请求体
 	requestBody := map[string]interface{}{
 		"model": "gpt-3.5-turbo", // 轻量级模型
 		"messages": []map[string]string{
@@ -51,49 +62,37 @@ func (s *AIService) CallLightweightAI(ctx context.Context, prompt string) (strin
 		"max_tokens":  500,
 	}
 
-	jsonData, err := json.Marshal(requestBody)
-	if err != nil {
-		return "", fmt.Errorf("failed to marshal request: %w", err)
-	}
-
-	// 创建HTTP请求
-	req, err := http.NewRequestWithContext(ctx, "POST", s.apiBaseURL+"/chat/completions", bytes.NewBuffer(jsonData))
-	if err != nil {
-		return "", fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+s.apiKey)
-
-	// 发送请求
-	resp, err := s.httpClient.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("failed to send request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	// 读取响应
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", fmt.Errorf("failed to read response: %w", err)
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("AI API error: %s", string(body))
-	}
-
-	// 解析响应
+	// 定义响应结构
 	var response struct {
 		Choices []struct {
 			Message struct {
 				Content string `json:"content"`
 			} `json:"message"`
 		} `json:"choices"`
+		Error struct {
+			Message string `json:"message"`
+		} `json:"error"`
 	}
 
-	err = json.Unmarshal(body, &response)
-	if err != nil {
-		return "", fmt.Errorf("failed to unmarshal response: %w", err)
+	// 记录请求日志
+	apiURL := s.apiBaseURL + "/chat/completions"
+	utils.LogHTTPRequest("ai", "CallLightweightAI", "POST", apiURL)
+
+	// 发送HTTP请求
+	resp, err := s.restyClient.R().
+		SetContext(ctx).
+		SetBody(requestBody).
+		SetResult(&response).
+		Post(apiURL)
+
+	// 统一错误处理
+	if httpErr := utils.HandleHTTPError("ai", "CallLightweightAI", resp, err); httpErr != nil {
+		return "", httpErr
+	}
+
+	// 检查API返回的业务错误
+	if response.Error.Message != "" {
+		return "", fmt.Errorf("AI API business error: %s", response.Error.Message)
 	}
 
 	if len(response.Choices) == 0 {
