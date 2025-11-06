@@ -354,7 +354,7 @@ async function testModel(model: AIModelConfig) {
   align-items: center;
   gap: 6px;
   padding: 8px 12px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #fead00, #ff791b);
   color: white;
   border: none;
   border-radius: 6px;
@@ -366,7 +366,7 @@ async function testModel(model: AIModelConfig) {
 
 .add-btn:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 4px 12px rgba(254, 173, 0, 0.4);
 }
 
 .add-btn:disabled {
@@ -411,8 +411,8 @@ async function testModel(model: AIModelConfig) {
 }
 
 .model-item:hover {
-  border-color: #667eea;
-  background: rgba(102, 126, 234, 0.05);
+  border-color: #fead00;
+  background: rgba(254, 173, 0, 0.05);
 }
 
 .model-info {
@@ -442,7 +442,7 @@ async function testModel(model: AIModelConfig) {
 .model-type {
   font-size: 11px;
   padding: 2px 6px;
-  background: #667eea;
+  background: #fead00;
   color: white;
   border-radius: 4px;
   font-weight: 500;
@@ -491,8 +491,8 @@ async function testModel(model: AIModelConfig) {
 }
 
 .action-btn:hover {
-  border-color: #667eea;
-  color: #667eea;
+  border-color: #fead00;
+  color: #fead00;
 }
 
 .test-btn:hover {
@@ -609,8 +609,8 @@ async function testModel(model: AIModelConfig) {
 
 .form-input:focus, .form-select:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: #fead00;
+  box-shadow: 0 0 0 3px rgba(254, 173, 0, 0.1);
 }
 
 .form-slider {
@@ -629,7 +629,7 @@ async function testModel(model: AIModelConfig) {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #667eea;
+  background: #fead00;
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -674,13 +674,13 @@ async function testModel(model: AIModelConfig) {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #fead00, #ff791b);
   color: white;
 }
 
 .btn-primary:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 4px 12px rgba(254, 173, 0, 0.4);
 }
 
 .btn-primary:disabled {

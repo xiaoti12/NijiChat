@@ -441,7 +441,7 @@ function handleSelectHistory(item: any) {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #fead00, #ff791b);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -471,8 +471,8 @@ function handleSelectHistory(item: any) {
 .tag {
   font-size: 10px;
   padding: 2px 6px;
-  background: rgba(102, 126, 234, 0.1);
-  color: #667eea;
+  background: rgba(254, 173, 0, 0.1);
+  color: #fead00;
   border-radius: 4px;
   font-weight: 500;
 }
@@ -497,7 +497,7 @@ function handleSelectHistory(item: any) {
 }
 
 .setting-value {
-  color: #667eea;
+  color: #fead00;
   font-weight: 600;
 }
 
@@ -514,13 +514,13 @@ function handleSelectHistory(item: any) {
 }
 
 .setting-select:hover {
-  border-color: #667eea;
+  border-color: #fead00;
 }
 
 .setting-select:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: #fead00;
+  box-shadow: 0 0 0 3px rgba(254, 173, 0, 0.1);
 }
 
 .setting-slider {
@@ -538,14 +538,14 @@ function handleSelectHistory(item: any) {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #667eea;
+  background: #fead00;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .setting-slider::-webkit-slider-thumb:hover {
   transform: scale(1.1);
-  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.2);
+  box-shadow: 0 0 0 4px rgba(254, 173, 0, 0.2);
 }
 
 .slider-labels {
@@ -560,7 +560,7 @@ function handleSelectHistory(item: any) {
 .apply-btn {
   width: 100%;
   padding: 10px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #fead00, #ff791b);
   color: white;
   border: none;
   border-radius: 8px;
@@ -576,7 +576,7 @@ function handleSelectHistory(item: any) {
 
 .apply-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 4px 12px rgba(254, 173, 0, 0.4);
 }
 
 /* 快捷操作 */
@@ -603,9 +603,9 @@ function handleSelectHistory(item: any) {
 }
 
 .quick-action-btn:hover {
-  border-color: #667eea;
-  background: rgba(102, 126, 234, 0.05);
-  color: #667eea;
+  border-color: #fead00;
+  background: rgba(254, 173, 0, 0.05);
+  color: #fead00;
 }
 
 /* 历史记录 */
@@ -627,13 +627,13 @@ function handleSelectHistory(item: any) {
 }
 
 .history-item:hover {
-  border-color: #667eea;
-  background: rgba(102, 126, 234, 0.05);
+  border-color: #fead00;
+  background: rgba(254, 173, 0, 0.05);
 }
 
 .history-item.active {
-  border-color: #667eea;
-  background: rgba(102, 126, 234, 0.1);
+  border-color: #fead00;
+  background: rgba(254, 173, 0, 0.1);
 }
 
 .history-time {
@@ -706,7 +706,7 @@ function handleSelectHistory(item: any) {
 
 .manage-btn:hover {
   background: #f3f4f6;
-  color: #667eea;
+  color: #fead00;
 }
 
 /* 无模型提示 */

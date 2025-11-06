@@ -300,7 +300,7 @@ function getStatusText(status: TheaterStatus): string {
 .sidebar-header {
   padding: 20px;
   text-align: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #fead00 0%, #ff791b 100%);
   color: white;
   position: relative;
   overflow: hidden;
@@ -373,16 +373,16 @@ function getStatusText(status: TheaterStatus): string {
 
 .search-input:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #fead00;
   background: white;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  box-shadow: 0 0 0 3px rgba(254, 173, 0, 0.1);
 }
 
 .new-conversation-btn {
   width: 36px;
   height: 36px;
   border: none;
-  background: #667eea;
+  background: #fead00;
   color: white;
   border-radius: 8px;
   cursor: pointer;
@@ -393,7 +393,7 @@ function getStatusText(status: TheaterStatus): string {
 }
 
 .new-conversation-btn:hover {
-  background: #5568d3;
+  background: #e6950d;
   transform: translateY(-1px);
 }
 
@@ -470,14 +470,14 @@ function getStatusText(status: TheaterStatus): string {
 }
 
 .conversation-item:hover {
-  background: rgba(102, 126, 234, 0.05);
+  background: rgba(254, 173, 0, 0.05);
 }
 
 .conversation-item.active {
   background: linear-gradient(90deg,
-    rgba(102, 126, 234, 0.1) 0%,
-    rgba(102, 126, 234, 0.05) 100%);
-  border-right: 3px solid #667eea;
+    rgba(254, 173, 0, 0.1) 0%,
+    rgba(254, 173, 0, 0.05) 100%);
+  border-right: 3px solid #fead00;
 }
 
 /* 头像 */
@@ -498,7 +498,7 @@ function getStatusText(status: TheaterStatus): string {
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #fead00, #ff791b);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -584,7 +584,7 @@ function getStatusText(status: TheaterStatus): string {
 
 /* 徽章 */
 .conversation-badge {
-  background: #667eea;
+  background: #fead00;
   color: white;
   font-size: 11px;
   font-weight: 600;
@@ -619,8 +619,8 @@ function getStatusText(status: TheaterStatus): string {
 
 .participant-count {
   font-size: 11px;
-  color: #667eea;
-  background: rgba(102, 126, 234, 0.1);
+  color: #fead00;
+  background: rgba(254, 173, 0, 0.1);
   padding: 2px 6px;
   border-radius: 10px;
 }
@@ -657,14 +657,14 @@ function getStatusText(status: TheaterStatus): string {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #fead00, #ff791b);
   color: white;
   font-size: 13px;
 }
 
 .btn-primary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 4px 12px rgba(254, 173, 0, 0.4);
 }
 
 /* 响应式 */

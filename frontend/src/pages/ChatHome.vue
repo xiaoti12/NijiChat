@@ -250,12 +250,12 @@ onMounted(async () => {
 /* CSS 变量定义 */
 :root {
   /* 品牌渐变色 */
-  --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --gradient-primary: linear-gradient(135deg, #fead00 0%, #ff791b 100%);
 
   /* 主色 */
-  --color-primary: #667eea;
-  --color-primary-dark: #5568d3;
-  --color-primary-light: rgba(102, 126, 234, 0.1);
+  --color-primary: #fead00;
+  --color-primary-dark: #e6950d;
+  --color-primary-light: rgba(254, 173, 0, 0.1);
 
   /* 文本颜色 */
   --text-primary: #1f2937;
@@ -360,14 +360,14 @@ onMounted(async () => {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #fead00, #ff791b);
   color: white;
   font-size: var(--font-size-md);
 }
 
 .btn-primary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 4px 12px rgba(254, 173, 0, 0.4);
 }
 
 .btn-large {
