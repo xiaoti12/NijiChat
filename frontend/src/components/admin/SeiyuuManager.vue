@@ -183,7 +183,6 @@ import type { Seiyuu, SeiyuuStatus } from '@/types'
 import {
   adminGetAllSeiyuu,
   adminDeleteSeiyuu,
-  adminPublishSeiyuu,
   adminUpdateSeiyuu
 } from '@/services/apiService'
 import SeiyuuForm from './SeiyuuForm.vue'
@@ -269,7 +268,7 @@ async function publishSeiyuu(id: string) {
   if (!confirm('确定要发布这个声优吗？')) return
 
   try {
-    const response = await adminPublishSeiyuu(id)
+    const response = await adminUpdateSeiyuu(id, { status: 'active' })
     if (response.success) {
       await refreshList()
     }
@@ -310,7 +309,7 @@ async function batchPublish() {
 
   try {
     await Promise.all(
-      selectedSeiyuu.value.map(id => adminPublishSeiyuu(id))
+      selectedSeiyuu.value.map(id => adminUpdateSeiyuu(id, { status: 'active' }))
     )
     selectedSeiyuu.value = []
     await refreshList()
