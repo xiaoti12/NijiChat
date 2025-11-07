@@ -82,72 +82,7 @@
         </div>
       </div>
 
-      <!-- 双声优剧场分组 -->
-      <div v-if="dualTheaters.length > 0" class="conversation-section">
-        <div class="section-header">
-          <h3 class="section-title">双声优剧场</h3>
-          <span class="section-count">{{ dualTheaters.length }}</span>
-        </div>
 
-        <div class="conversation-list">
-          <div
-            v-for="theater in dualTheaters"
-            :key="theater.id"
-            class="conversation-item theater-item"
-            @click="handleSelectConversation(theater.id)"
-          >
-            <div class="theater-avatars">
-              <img :src="theater.seiyuu1.avatar" :alt="theater.seiyuu1.name" class="avatar avatar-small" />
-              <img :src="theater.seiyuu2.avatar" :alt="theater.seiyuu2.name" class="avatar avatar-small avatar-overlap" />
-            </div>
-
-            <div class="conversation-content">
-              <div class="conversation-header">
-                <h4 class="conversation-name">{{ theater.seiyuu1.name }} & {{ theater.seiyuu2.name }}</h4>
-                <span :class="['theater-status', `status-${theater.status}`]">
-                  {{ getStatusText(theater.status) }}
-                </span>
-              </div>
-              <div class="conversation-preview">
-                <p class="last-message">{{ theater.lastMessage }}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 群组剧场分组 -->
-      <div v-if="groupTheaters.length > 0" class="conversation-section">
-        <div class="section-header">
-          <h3 class="section-title">群组剧场</h3>
-          <span class="section-count">{{ groupTheaters.length }}</span>
-        </div>
-
-        <div class="conversation-list">
-          <div
-            v-for="group in groupTheaters"
-            :key="group.id"
-            class="conversation-item group-item"
-            @click="handleSelectConversation(group.id)"
-          >
-            <div class="group-avatar">
-              <div class="avatar-placeholder group-placeholder">
-                {{ group.name.charAt(0) }}
-              </div>
-            </div>
-
-            <div class="conversation-content">
-              <div class="conversation-header">
-                <h4 class="conversation-name">{{ group.name }}</h4>
-                <span class="participant-count">{{ group.participants.length }}人</span>
-              </div>
-              <div class="conversation-preview">
-                <p class="last-message">{{ group.lastMessage }}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
 
       <!-- 空状态 -->
       <div v-if="filteredConversations.length === 0 && !searchQuery" class="empty-conversations">
@@ -168,7 +103,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import type { Conversation, DualTheater, GroupTheater, TheaterStatus } from '@/types'
+import type { Conversation } from '@/types'
 
 // Props
 const props = defineProps<{
@@ -193,43 +128,11 @@ const isDevelopmentMode = computed(() => {
   return import.meta.env.DEV || import.meta.env.MODE === 'development'
 })
 
-// 模拟的双声优剧场数据
-const dualTheaters = ref<DualTheater[]>([
-  {
-    id: 'dual-1',
-    seiyuu1: {
-      id: 'seiyuu-1',
-      name: '花泽香菜',
-      avatar: 'https://via.placeholder.com/32/FFB6C1/FFFFFF?text=花泽'
-    },
-    seiyuu2: {
-      id: 'seiyuu-2',
-      name: '钉宫理惠',
-      avatar: 'https://via.placeholder.com/32/FFB6C1/FFFFFF?text=钉宫'
-    },
-    topic: '萝莉对决',
-    status: 'active',
-    lastMessage: '哼！我可不会输给你的！',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60).toISOString()
-  }
-])
+// 双声优剧场数据（从后端API获取）
+const dualTheaters = ref<DualTheater[]>([])
 
-// 模拟的群组剧场数据
-const groupTheaters = ref<GroupTheater[]>([
-  {
-    id: 'group-1',
-    group_id: 'group-1',
-    name: '治愈系声优群',
-    participants: [
-      { id: 'seiyuu-3', name: '水树奈奈', avatar: 'https://via.placeholder.com/32/87CEEB/FFFFFF?text=水树' },
-      { id: 'seiyuu-5', name: '堀江由衣', avatar: 'https://via.placeholder.com/32/98FB98/FFFFFF?text=堀江' },
-      { id: 'seiyuu-7', name: '茅野爱衣', avatar: 'https://via.placeholder.com/32/E6E6FA/FFFFFF?text=茅野' }
-    ],
-    status: 'active',
-    lastMessage: '大家一起唱首歌吧～',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString()
-  }
-])
+// 群组剧场数据（从后端API获取）
+const groupTheaters = ref<GroupTheater[]>([])
 
 // 计算属性
 const filteredConversations = computed(() => {
@@ -275,14 +178,6 @@ function formatTime(timestamp: string): string {
   }
 }
 
-function getStatusText(status: TheaterStatus): string {
-  const statusMap = {
-    active: '进行中',
-    completed: '已完成',
-    paused: '已暂停'
-  }
-  return statusMap[status] || '未知'
-}
 </script>
 
 <style scoped>
@@ -507,32 +402,6 @@ function getStatusText(status: TheaterStatus): string {
   font-size: 16px;
 }
 
-/* 小尺寸头像（双人剧场） */
-.avatar-small {
-  width: 28px;
-  height: 28px;
-}
-
-.avatar-overlap {
-  margin-left: -12px;
-  border-color: white;
-}
-
-.theater-avatars {
-  display: flex;
-  margin-right: 12px;
-  flex-shrink: 0;
-}
-
-/* 群组头像 */
-.group-avatar {
-  margin-right: 12px;
-  flex-shrink: 0;
-}
-
-.group-placeholder {
-  background: linear-gradient(135deg, #10b981, #059669);
-}
 
 /* 对话内容 */
 .conversation-content {
@@ -594,36 +463,6 @@ function getStatusText(status: TheaterStatus): string {
   text-align: center;
 }
 
-/* 状态标签 */
-.theater-status {
-  font-size: 10px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-weight: 500;
-}
-
-.status-active {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.status-completed {
-  background: #f3f4f6;
-  color: #6b7280;
-}
-
-.status-paused {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.participant-count {
-  font-size: 11px;
-  color: #fead00;
-  background: rgba(254, 173, 0, 0.1);
-  padding: 2px 6px;
-  border-radius: 10px;
-}
 
 /* 空状态 */
 .empty-conversations {

@@ -1,6 +1,7 @@
 /**
  * Mock数据服务
  * 提供声优数据和AI回复模拟
+ * ToDo 不再使用
  */
 
 import type { Seiyuu, SeiyuuListResponse, Message } from '@/types'

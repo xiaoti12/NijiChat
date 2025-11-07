@@ -74,9 +74,9 @@ import { useChatStore } from '@/stores/chatStore'
 import { useSeiyuuStore } from '@/stores/seiyuuStore'
 import { useAIModelStore } from '@/stores/aiModelStore'
 import { useConfigStore } from '@/stores/configStore'
-import { mockService } from '@/services/mockService'
+import { getSeiyuuList } from '@/services/apiService'
 import { aiService } from '@/services/aiService'
-import type { Room, Message, Seiyuu } from '@/types'
+import type { Seiyuu } from '@/types'
 
 // 导入组件
 import ChatSidebar from '@/components/ChatSidebar.vue'
@@ -102,17 +102,16 @@ const currentRoomId = computed(() => chatStore.currentRoomId)
 const currentRoom = computed(() => chatStore.currentRoom)
 const currentMessages = computed(() => chatStore.currentMessages)
 
-const currentSeiyuu = computed(() => {
+const currentSeiyuu = computed((): Seiyuu | null => {
   if (!currentRoom.value) return null
   // 1v1 对话获取对应的声优
   if (currentRoom.value.type === '1v1' && currentRoom.value.participants.length === 1) {
-    return seiyuuStore.getSeiyuuById(currentRoom.value.participants[0])
+    return seiyuuStore.getSeiyuuById(currentRoom.value.participants[0]) || null
   }
   return null
 })
 
 // AI配置状态
-const hasAIModels = computed(() => aiModelStore.models.length > 0)
 const hasChatModels = computed(() => aiModelStore.chatModels.length > 0)
 
 // 是否使用真实AI服务
@@ -178,22 +177,11 @@ async function handleSendMessage(content: string) {
         // 使用Promise.race实现超时控制
         aiReply = await Promise.race([aiPromise, timeoutPromise])
       } catch (error) {
-        console.warn('AI服务调用失败，使用mock回复:', error)
-        // AI服务失败时降级到mock服务
-        aiReply = await mockService.generateAIReply(
-          currentSeiyuu.value.name,
-          content,
-          conversationHistory
-        )
+        console.error('AI服务调用失败:', error)
+        throw error // 重新抛出错误，让外层catch处理
       }
     } else {
-      console.log('🎭 使用演示模式生成回复...')
-      // 使用mock服务
-      aiReply = await mockService.generateAIReply(
-        currentSeiyuu.value.name,
-        content,
-        conversationHistory
-      )
+      throw new Error('请先配置AI模型才能开始聊天')
     }
 
     // 4. 添加AI回复消息
@@ -208,8 +196,18 @@ async function handleSendMessage(content: string) {
   } catch (error) {
     console.error('发送消息失败:', error)
 
-    // 添加友好的错误提示消息
+    // 根据错误类型提供不同的友好提示
     let errorMessage = '抱歉，我现在有点忙，稍后再回复你吧～'
+
+    if (error instanceof Error) {
+      if (error.message.includes('AI请求超时')) {
+        errorMessage = '哎呀，思考太久了，请稍后再试吧～'
+      } else if (error.message.includes('请先配置AI模型')) {
+        errorMessage = '请先配置AI模型才能开始聊天哦～'
+      } else if (error.message.includes('网络')) {
+        errorMessage = '网络好像有点问题，请检查一下连接～'
+      }
+    }
 
     chatStore.addMessage({
       room_id: currentRoom.value.id,
@@ -240,12 +238,18 @@ onMounted(async () => {
     // 1. 首先尝试从本地存储加载声优数据
     const hasStoredSeiyuu = seiyuuStore.loadFromStorage()
 
-    // 2. 如果本地没有声优数据，从mock服务加载
-    if (!hasStoredSeiyuu && mockService.isMockMode()) {
-      console.log('🎭 从mock服务加载声优数据...')
-      const response = await mockService.getSeiyuuList()
-      if (response.success && response.data) {
-        seiyuuStore.setSeiyuuList(response.data) // 这会自动保存到本地存储
+    // 2. 如果本地没有声优数据，从后端API加载
+    if (!hasStoredSeiyuu) {
+      console.log('🌐 从后端API加载声优数据...')
+      try {
+        const response = await getSeiyuuList()
+        if (response.success && response.data) {
+          seiyuuStore.setSeiyuuList(response.data) // 这会自动保存到本地存储
+        } else {
+          console.warn('⚠️ 从后端加载声优数据失败:', response.message)
+        }
+      } catch (error) {
+        console.error('❌ 从后端加载声优数据出错:', error)
       }
     }
 
@@ -261,55 +265,6 @@ onMounted(async () => {
       console.log('✅ 数据完整性检查通过')
     }
 
-    // 5. 数据完整性检查和初始化
-    if (mockService.isMockMode()) {
-      // 如果没有历史对话，创建初始对话
-      if (chatStore.rooms.length === 0) {
-        console.log('🎭 创建初始演示对话...')
-        const initialConversations = mockService.generateInitialConversations()
-        for (const conv of initialConversations) {
-          const seiyuu = seiyuuStore.getSeiyuuById(conv.seiyuuId)
-          if (seiyuu) {
-            const room = chatStore.createRoom({
-              type: '1v1',
-              name: seiyuu.name,
-              avatar: seiyuu.avatar_url,
-              participants: [seiyuu.id],
-              unread_count: 0
-            })
-
-            // 添加最后一条消息
-            chatStore.addMessage({
-              room_id: room.id,
-              sender_id: seiyuu.id,
-              sender_name: seiyuu.name,
-              sender_avatar: seiyuu.avatar_url,
-              content: conv.lastMessage
-            })
-          }
-        }
-      } else {
-        console.log(`✅ 已加载 ${chatStore.rooms.length} 个历史对话`)
-
-        // 验证历史对话的声优数据完整性
-        const invalidRooms = chatStore.rooms.filter(room => {
-          if (room.type === '1v1' && room.participants.length === 1) {
-            const seiyuu = seiyuuStore.getSeiyuuById(room.participants[0])
-            return !seiyuu
-          }
-          return false
-        })
-
-        if (invalidRooms.length > 0) {
-          console.warn(`⚠️ 发现 ${invalidRooms.length} 个对话缺少声优数据，需要重新加载声优信息`)
-          // 如果发现数据不完整，重新加载声优数据
-          const response = await mockService.getSeiyuuList()
-          if (response.success && response.data) {
-            seiyuuStore.setSeiyuuList(response.data)
-          }
-        }
-      }
-    }
 
     // 处理路由参数
     const seiyuuId = route.query.seiyuuId as string
