@@ -101,21 +101,29 @@
 
         <div v-if="moegirlData" class="moegirl-result">
           <div class="result-header">
-            <h5>获取到的原始数据</h5>
+            <div class="result-header-left">
+              <h5>获取到的原始数据</h5>
+              <p class="result-info">来源：{{ moegirlData.page_title || moegirlData.page_url || '未知' }}</p>
+            </div>
             <button
               type="button"
               @click="processWithAI"
-              class="btn btn-primary"
+              class="btn btn-primary ai-process-btn"
               :disabled="aiProcessing"
             >
+              <span class="btn-icon">🤖</span>
               {{ aiProcessing ? 'AI处理中...' : 'AI处理为Markdown' }}
             </button>
           </div>
+          <div class="debug-info" v-if="moegirlData">
+            <small>调试信息：数据长度 {{ moegirlData.raw_text?.length || 0 }} 字符</small>
+          </div>
           <textarea
             readonly
-            :value="moegirlData.content"
+            :value="moegirlData.raw_text || ''"
             class="textarea moegirl-content"
             rows="8"
+            :placeholder="moegirlData ? '数据加载中...' : '暂无数据'"
           ></textarea>
         </div>
       </div>
@@ -220,7 +228,7 @@ const form = reactive({
 
 const newTag = ref('')
 const moegirlName = ref('')
-const moegirlData = ref<{ content: string; url: string } | null>(null)
+const moegirlData = ref<{ raw_text: string; page_title: string; page_url: string } | null>(null)
 const moegirlLoading = ref(false)
 const aiProcessing = ref(false)
 const saving = ref(false)
@@ -267,11 +275,11 @@ async function fetchMoegirlData() {
   try {
     moegirlLoading.value = true
     const response = await getMoegirlData(moegirlName.value.trim())
-    if (response.success) {
-      moegirlData.value = response.data
+    if (response.success && response.data?.success && response.data?.data) {
+      moegirlData.value = response.data.data
       // 自动设置声优名称（如果还没有设置）
-      if (!form.name) {
-        form.name = moegirlName.value.trim()
+      if (!form.name && response.data.data.page_title) {
+        form.name = response.data.data.page_title
       }
     }
   } catch (error) {
@@ -287,25 +295,52 @@ async function processWithAI() {
   try {
     aiProcessing.value = true
     const response = await processProfile({
-      raw_data: moegirlData.value.content,
+      raw_text: moegirlData.value.raw_text,
       seiyuu_name: form.name || moegirlName.value.trim()
     })
 
-    if (response.success && response.data) {
+    if (response.success && response.data?.success && response.data?.data) {
+      const aiData = response.data.data
+
       // 设置AI处理后的内容
-      form.profile_markdown = response.data.markdown
+      if (aiData.profile_markdown) {
+        form.profile_markdown = aiData.profile_markdown
+        console.log('AI处理成功，Markdown内容已更新，长度:', aiData.profile_markdown.length)
+      }
 
       // 如果有建议的标签，添加到标签列表
-      if (response.data.suggested_tags) {
-        response.data.suggested_tags.forEach(tag => {
-          if (!form.tags.includes(tag)) {
+      if (aiData.suggested_tags && Array.isArray(aiData.suggested_tags)) {
+        aiData.suggested_tags.forEach(tag => {
+          if (tag && !form.tags.includes(tag)) {
             form.tags.push(tag)
           }
         })
+        console.log('AI建议标签已添加:', aiData.suggested_tags)
       }
+
+      // 用户反馈
+      console.log('AI处理完成！')
+    } else {
+      console.error('AI处理响应数据格式异常:', response)
+      alert('AI处理返回的数据格式异常，请稍后重试或联系管理员')
     }
   } catch (error) {
     console.error('AI处理失败:', error)
+
+    // 用户友好的错误提示
+    let errorMessage = 'AI处理失败'
+    if (error instanceof Error) {
+      if (error.message.includes('timeout')) {
+        errorMessage = 'AI处理超时，请稍后重试'
+      } else if (error.message.includes('network')) {
+        errorMessage = '网络连接失败，请检查网络后重试'
+      } else {
+        errorMessage = `AI处理失败：${error.message}`
+      }
+    }
+
+    // 这里可以添加用户通知组件
+    alert(errorMessage)
   } finally {
     aiProcessing.value = false
   }
@@ -385,7 +420,9 @@ async function handleSave() {
 }
 
 .form-section {
+  width: 100%;
   margin-bottom: var(--spacing-2xl);
+  box-sizing: border-box;
 }
 
 .form-section:last-child {
@@ -408,14 +445,24 @@ async function handleSave() {
 
 /* 表单组 */
 .form-group {
+  width: 100%;
   margin-bottom: var(--spacing-lg);
+  box-sizing: border-box;
 }
 
 .form-group label {
   display: block;
+  width: 100%;
   margin-bottom: var(--spacing-sm);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
+}
+
+.form-group .input,
+.form-group .select,
+.form-group .textarea {
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .form-group label.required::after {
@@ -494,41 +541,143 @@ async function handleSave() {
 .moegirl-input-group {
   display: flex;
   gap: var(--spacing-sm);
+  align-items: center;
+}
+
+.moegirl-input-group .input {
+  flex: 1;
+  min-width: 0;
+}
+
+.moegirl-input-group .btn {
+  white-space: nowrap;
+  min-width: auto;
+  padding: var(--spacing-md) var(--spacing-lg);
 }
 
 .moegirl-result {
+  width: 100%;
   margin-top: var(--spacing-lg);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   padding: var(--spacing-lg);
   background: var(--bg-secondary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-sizing: border-box;
 }
 
 .result-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--spacing-md);
+  align-items: flex-start;
+  margin-bottom: var(--spacing-lg);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--border-color);
 }
 
-.result-header h5 {
-  margin: 0;
-  font-size: var(--font-size-sm);
+.result-header-left h5 {
+  margin: 0 0 var(--spacing-xs) 0;
+  font-size: var(--font-size-md);
   font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+}
+
+.result-info {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.ai-process-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  min-height: 40px;
+  font-weight: var(--font-weight-medium);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  transition: all 0.3s ease;
+}
+
+.ai-process-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.ai-process-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.btn-icon {
+  font-size: var(--font-size-sm);
+}
+
+.debug-info {
+  width: 100%;
+  margin-bottom: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: #fff5cd;
+  border: 1px solid #f59e0b;
+  border-radius: var(--radius-sm);
+  font-family: monospace;
+  color: #92400e;
+  box-sizing: border-box;
 }
 
 .moegirl-content {
-  background: var(--bg-primary);
-  font-family: monospace;
+  width: 100%;
+  background: #f8f9fa;
+  color: #2d3748;
+  border: 1px solid var(--border-color);
+  font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', monospace;
   font-size: var(--font-size-sm);
+  line-height: 1.6;
+  border-radius: var(--radius-md);
+  padding: var(--spacing-lg);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+  resize: vertical;
+  min-height: 200px;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e0 #f7fafc;
+  box-sizing: border-box;
+}
+
+.moegirl-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.moegirl-content::-webkit-scrollbar-track {
+  background: #f7fafc;
+  border-radius: 4px;
+}
+
+.moegirl-content::-webkit-scrollbar-thumb {
+  background: #cbd5e0;
+  border-radius: 4px;
+}
+
+.moegirl-content::-webkit-scrollbar-thumb:hover {
+  background: #a0aec0;
+}
+
+.moegirl-content:focus {
+  outline: 2px solid rgba(102, 126, 234, 0.5);
+  outline-offset: 2px;
 }
 
 /* 资料文本域 */
 .profile-textarea {
+  width: 100%;
   font-family: monospace;
   font-size: var(--font-size-sm);
   line-height: 1.6;
   resize: vertical;
+  box-sizing: border-box;
 }
 
 .textarea-help {
@@ -574,10 +723,26 @@ async function handleSave() {
     flex-direction: column;
   }
 
+  .moegirl-input-group .btn {
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: var(--font-size-sm);
+  }
+
   .result-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: var(--spacing-sm);
+    gap: var(--spacing-md);
+  }
+
+  .ai-process-btn {
+    width: 100%;
+    justify-content: center;
+    min-height: 44px;
+  }
+
+  .moegirl-content {
+    font-size: var(--font-size-xs);
+    padding: var(--spacing-md);
   }
 
   .form-footer {

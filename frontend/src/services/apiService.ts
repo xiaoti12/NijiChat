@@ -110,7 +110,9 @@ export function getMoegirlData(name: string): Promise<MoegirlRawDataResponse> {
  * AI处理资料转Markdown
  */
 export function processProfile(data: ProcessProfileRequest): Promise<ProcessProfileResponse> {
-  return request.post<ProcessProfileResponse['data']>('/admin/process-profile', data)
+  return request.post<ProcessProfileResponse['data']>('/admin/process-profile', data, {
+    timeout: 120000  // 2分钟超时，因为AI处理可能需要较长时间
+  })
 }
 
 // ========== 群组管理 ==========
