@@ -29,9 +29,9 @@
       >
         <div class="model-info">
           <div class="model-header">
-            <h4 class="model-name">{{ model.name }}</h4>
-            <div class="model-badges">
+            <div class="model-name-section">
               <span class="model-type">{{ getModelTypeLabel(model.type) }}</span>
+              <h4 class="model-name">{{ model.name }}</h4>
             </div>
           </div>
           <div class="model-details">
@@ -332,6 +332,7 @@ async function testModel(model: AIModelConfig) {
 <style scoped>
 .ai-model-manager {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  padding: 16px;
 }
 
 /* 头部 */
@@ -427,6 +428,12 @@ async function testModel(model: AIModelConfig) {
   margin-bottom: 8px;
 }
 
+.model-name-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .model-name {
   font-size: 14px;
   font-weight: 600;
@@ -434,10 +441,6 @@ async function testModel(model: AIModelConfig) {
   margin: 0;
 }
 
-.model-badges {
-  display: flex;
-  gap: 6px;
-}
 
 .model-type {
   font-size: 11px;
