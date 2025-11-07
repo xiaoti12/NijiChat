@@ -44,6 +44,23 @@ func (s *SeiyuuService) GetAllSeiyuu(ctx context.Context) ([]*models.Seiyuu, err
 	return s.scanSeiyuuRows(rows)
 }
 
+// GetAllSeiyuuAdmin 获取所有声优列表（管理员接口，包含所有状态）
+func (s *SeiyuuService) GetAllSeiyuuAdmin(ctx context.Context) ([]*models.Seiyuu, error) {
+	query := `
+		SELECT id, name, avatar_url, profile_markdown, tags, status, created_at, updated_at
+		FROM seiyuu
+		ORDER BY created_at DESC
+	`
+
+	rows, err := s.db.Query(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query all seiyuu: %w", err)
+	}
+	defer rows.Close()
+
+	return s.scanSeiyuuRows(rows)
+}
+
 // GetSeiyuuByID 根据ID获取声优详情
 func (s *SeiyuuService) GetSeiyuuByID(ctx context.Context, id string) (*models.Seiyuu, error) {
 	// 先尝试从缓存获取

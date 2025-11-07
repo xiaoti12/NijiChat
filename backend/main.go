@@ -93,7 +93,7 @@ func setupRoutes(
 		admin.GET("/profile", adminHandler.GetProfile)
 
 		// 声优管理
-		admin.GET("/seiyuu", seiyuuHandler.GetAllSeiyuu) // 获取所有声优（含待审核）
+		admin.GET("/seiyuu", seiyuuHandler.GetAllSeiyuuAdmin) // 获取所有声优（含待审核）
 		admin.POST("/seiyuu", seiyuuHandler.CreateSeiyuu)
 		admin.PUT("/seiyuu/:id", seiyuuHandler.UpdateSeiyuu)
 		admin.DELETE("/seiyuu/:id", seiyuuHandler.DeleteSeiyuu)

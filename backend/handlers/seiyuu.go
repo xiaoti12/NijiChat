@@ -64,6 +64,20 @@ func (h *SeiyuuHandler) GetSeiyuuByID(c *gin.Context) {
 	utils.SuccessResponse(c, seiyuu)
 }
 
+// GetAllSeiyuuAdmin 获取所有声优列表（管理员）
+// GET /api/admin/seiyuu
+func (h *SeiyuuHandler) GetAllSeiyuuAdmin(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	seiyuus, err := h.seiyuuService.GetAllSeiyuuAdmin(ctx)
+	if err != nil {
+		utils.InternalServerError(c, err)
+		return
+	}
+
+	utils.SuccessResponse(c, seiyuus)
+}
+
 // CreateSeiyuu 创建声优（管理员）
 // POST /api/admin/seiyuu
 func (h *SeiyuuHandler) CreateSeiyuu(c *gin.Context) {
