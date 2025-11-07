@@ -1,22 +1,12 @@
 <template>
   <div class="chat-page">
     <!-- 左侧对话列表 -->
-    <ChatSidebar
-      :conversations="conversations"
-      :current-room-id="currentRoomId"
-      @select-conversation="handleSelectConversation"
-      @new-conversation="handleNewConversation"
-    />
+    <ChatSidebar :conversations="conversations" :current-room-id="currentRoomId"
+      @select-conversation="handleSelectConversation" @new-conversation="handleNewConversation" />
 
     <!-- 中间聊天区域 -->
-    <ChatInterface
-      v-if="currentRoom"
-      :room="currentRoom"
-      :messages="currentMessages"
-      :seiyuu="currentSeiyuu"
-      :use-real-AI="useRealAI"
-      @send-message="handleSendMessage"
-    />
+    <ChatInterface v-if="currentRoom" :room="currentRoom" :messages="currentMessages" :seiyuu="currentSeiyuu"
+      :use-real-AI="useRealAI" @send-message="handleSendMessage" />
 
     <!-- 空状态 -->
     <div v-else class="empty-state">
@@ -30,7 +20,8 @@
         <div class="action-buttons">
           <button @click="showAIManager = true" class="btn btn-primary btn-large">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" class="btn-icon">
-              <path d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311c.446.82.023 1.841-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413 1.4-2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872l-.1-.34zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z"/>
+              <path
+                d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311c.446.82.023 1.841-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413 1.4-2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872l-.1-.34zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z" />
             </svg>
             配置AI模型
           </button>
@@ -49,7 +40,8 @@
           </button>
           <button @click="showAIManager = true" class="btn btn-secondary btn-large">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" class="btn-icon">
-              <path d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311c.446.82.023 1.841-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413 1.4-2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872l-.1-.34zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z"/>
+              <path
+                d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311c.446.82.023 1.841-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413 1.4-2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872l-.1-.34zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z" />
             </svg>
             管理AI模型
           </button>
@@ -58,14 +50,8 @@
     </div>
 
     <!-- 右侧设置面板 -->
-    <ChatRightPanel
-      v-if="currentRoom"
-      :room="currentRoom"
-      :seiyuu="currentSeiyuu"
-      :collapsed="rightPanelCollapsed"
-      @toggle="toggleRightPanel"
-      @update-settings="handleUpdateSettings"
-    />
+    <ChatRightPanel v-if="currentRoom" :room="currentRoom" :seiyuu="currentSeiyuu" :collapsed="rightPanelCollapsed"
+      @toggle="toggleRightPanel" @update-settings="handleUpdateSettings" />
 
     <!-- AI模型管理器弹窗 -->
     <div v-if="showAIManager" class="ai-manager-overlay" @click="showAIManager = false">
@@ -150,8 +136,11 @@ async function handleSendMessage(content: string) {
   try {
     loading.value = true
 
-    // 添加用户消息
-    const userMessage = chatStore.addMessage({
+    // 1. 先获取历史消息（在添加当前用户消息之前）
+    const conversationHistory = chatStore.getRecentMessages(currentRoom.value.id, 10)
+
+    // 2. 立即添加用户消息到存储（用户可以立即看到）
+    chatStore.addMessage({
       room_id: currentRoom.value.id,
       sender_id: 'user-1',
       sender_name: '用户',
@@ -169,23 +158,32 @@ async function handleSendMessage(content: string) {
       useRealAI: useRealAI.value
     })
 
+    // 3. 异步生成AI回复
     if (useRealAI.value) {
       try {
         console.log('🤖 使用真实AI服务生成回复...')
-        // 使用真实AI服务
-        aiReply = await aiService.generateReply({
+        // 创建AI请求Promise
+        const aiPromise = aiService.generateReply({
           message: content,
           seiyuu_profile: currentSeiyuu.value.profile_markdown || '',
-          conversation_history: chatStore.getRecentMessages(currentRoom.value.id, 10),
-          model_id: configStore.config.selected_chat_model
+          conversation_history: conversationHistory,
+          model_id: selectedModel
         })
+
+        // 创建超时Promise（30秒超时）
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error('AI请求超时')), 30000)
+        })
+
+        // 使用Promise.race实现超时控制
+        aiReply = await Promise.race([aiPromise, timeoutPromise])
       } catch (error) {
         console.warn('AI服务调用失败，使用mock回复:', error)
         // AI服务失败时降级到mock服务
         aiReply = await mockService.generateAIReply(
           currentSeiyuu.value.name,
           content,
-          chatStore.getRecentMessages(currentRoom.value.id, 10)
+          conversationHistory
         )
       }
     } else {
@@ -194,11 +192,11 @@ async function handleSendMessage(content: string) {
       aiReply = await mockService.generateAIReply(
         currentSeiyuu.value.name,
         content,
-        chatStore.getRecentMessages(currentRoom.value.id, 10)
+        conversationHistory
       )
     }
 
-    // 添加AI回复消息
+    // 4. 添加AI回复消息
     chatStore.addMessage({
       room_id: currentRoom.value.id,
       sender_id: currentSeiyuu.value.id,
@@ -209,6 +207,17 @@ async function handleSendMessage(content: string) {
 
   } catch (error) {
     console.error('发送消息失败:', error)
+
+    // 添加友好的错误提示消息
+    let errorMessage = '抱歉，我现在有点忙，稍后再回复你吧～'
+
+    chatStore.addMessage({
+      room_id: currentRoom.value.id,
+      sender_id: currentSeiyuu.value?.id || 'system',
+      sender_name: currentSeiyuu.value?.name || '系统',
+      sender_avatar: currentSeiyuu.value?.avatar_url,
+      content: errorMessage
+    })
   } finally {
     loading.value = false
   }
@@ -531,6 +540,7 @@ onMounted(async () => {
 }
 
 @media (max-width: 1400px) {
+
   /* 右侧面板浮动 */
   .chat-page :deep(.chat-right-panel) {
     position: absolute;
