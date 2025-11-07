@@ -7,6 +7,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { Message, Room, Conversation, ChatSettings } from '@/types'
 import { generateId } from '@/utils/crypto'
+import { chatPersistenceService } from '@/services/chatPersistenceService'
 
 export const useChatStore = defineStore('chat', () => {
   // 状态
@@ -14,6 +15,7 @@ export const useChatStore = defineStore('chat', () => {
   const messages = ref<Map<string, Message[]>>(new Map())
   const currentRoomId = ref<string | null>(null)
   const chatSettings = ref<ChatSettings>(loadChatSettings())
+  const isLoaded = ref(false) // 标记是否已从本地存储加载数据
 
   // Computed
   const currentRoom = computed(() => {
@@ -59,6 +61,40 @@ export const useChatStore = defineStore('chat', () => {
     saveChatSettings()
   }
 
+  // === 数据初始化加载 ===
+
+  /**
+   * 从本地存储加载所有聊天数据
+   */
+  async function loadFromStorage(): Promise<void> {
+    if (isLoaded.value) return // 避免重复加载
+
+    try {
+      console.log('🔄 正在从本地存储加载聊天数据...')
+
+      // 并行加载房间和消息数据
+      const [storedRooms, storedMessages] = await Promise.all([
+        chatPersistenceService.getRooms(),
+        chatPersistenceService.getAllMessages()
+      ])
+
+      // 更新状态
+      rooms.value = storedRooms
+      messages.value = storedMessages
+
+      console.log(`✅ 成功加载 ${storedRooms.length} 个房间和 ${storedMessages.size} 个消息集合`)
+
+      // 数据迁移
+      await chatPersistenceService.migrateData()
+
+      isLoaded.value = true
+    } catch (error) {
+      console.error('❌ 从本地存储加载数据失败:', error)
+      // 加载失败时保持默认状态，不抛出异常
+      isLoaded.value = true
+    }
+  }
+
   // === 房间管理 ===
 
   // 创建房间
@@ -70,6 +106,12 @@ export const useChatStore = defineStore('chat', () => {
     }
     rooms.value.push(newRoom)
     messages.value.set(newRoom.id, [])
+
+    // 持久化保存
+    chatPersistenceService.addRoom(newRoom).catch(error => {
+      console.error('保存新房间到本地存储失败:', error)
+    })
+
     return newRoom
   }
 
@@ -87,6 +129,11 @@ export const useChatStore = defineStore('chat', () => {
       if (currentRoomId.value === roomId) {
         currentRoomId.value = null
       }
+
+      // 持久化删除
+      chatPersistenceService.deleteRoom(roomId).catch(error => {
+        console.error('从本地存储删除房间失败:', error)
+      })
     }
   }
 
@@ -105,6 +152,11 @@ export const useChatStore = defineStore('chat', () => {
     const room = getRoom(roomId)
     if (room) {
       Object.assign(room, updates)
+
+      // 持久化更新
+      chatPersistenceService.updateRoom(roomId, updates).catch(error => {
+        console.error('更新房间到本地存储失败:', error)
+      })
     }
   }
 
@@ -126,6 +178,11 @@ export const useChatStore = defineStore('chat', () => {
     updateRoom(message.room_id, {
       last_message: newMessage,
       unread_count: currentRoomId.value === message.room_id ? 0 : (getRoom(message.room_id)?.unread_count || 0) + 1
+    })
+
+    // 持久化保存消息
+    chatPersistenceService.addMessageToRoom(message.room_id, newMessage).catch(error => {
+      console.error('保存消息到本地存储失败:', error)
     })
 
     return newMessage
@@ -153,6 +210,11 @@ export const useChatStore = defineStore('chat', () => {
       const index = roomMessages.findIndex(m => m.id === messageId)
       if (index !== -1) {
         roomMessages.splice(index, 1)
+
+        // 持久化删除
+        chatPersistenceService.deleteMessageFromRoom(roomId, messageId).catch(error => {
+          console.error('从本地存储删除消息失败:', error)
+        })
       }
     }
   }
@@ -161,6 +223,11 @@ export const useChatStore = defineStore('chat', () => {
   function clearRoomMessages(roomId: string) {
     messages.value.set(roomId, [])
     updateRoom(roomId, { last_message: undefined })
+
+    // 持久化清空
+    chatPersistenceService.deleteRoomMessages(roomId).catch(error => {
+      console.error('清空房间消息从本地存储失败:', error)
+    })
   }
 
   // === 对话列表（用于侧边栏显示） ===
@@ -188,16 +255,139 @@ export const useChatStore = defineStore('chat', () => {
     )
   }
 
-  // === 持久化（后续集成IndexedDB） ===
+  // === 数据管理 ===
 
-  // TODO: 实现IndexedDB持久化
-  // - 消息存储和检索
-  // - 房间信息存储
-  // - 批量操作优化
+  /**
+   * 清空所有聊天数据
+   */
+  async function clearAllData(): Promise<void> {
+    try {
+      // 清空内存状态
+      rooms.value = []
+      messages.value.clear()
+      currentRoomId.value = null
 
-  // TODO: 实现WebDAV同步
-  // - 数据备份
-  // - 跨设备同步
+      // 清空本地存储
+      await chatPersistenceService.clearAllData()
+
+      console.log('✅ 所有聊天数据已清空')
+    } catch (error) {
+      console.error('❌ 清空聊天数据失败:', error)
+      throw error
+    }
+  }
+
+  /**
+   * 获取存储使用情况
+   */
+  async function getStorageInfo() {
+    try {
+      return await chatPersistenceService.getStorageInfo()
+    } catch (error) {
+      console.error('获取存储信息失败:', error)
+      return {
+        roomsCount: 0,
+        totalMessages: 0,
+        storageSize: 0
+      }
+    }
+  }
+
+  /**
+   * 验证数据完整性
+   * 检查房间和消息数据是否一致
+   */
+  function validateDataIntegrity(): {
+    isValid: boolean
+    issues: string[]
+    stats: {
+      totalRooms: number
+      totalMessages: number
+      orphanedMessages: number
+      emptyRooms: number
+    }
+  } {
+    const issues: string[] = []
+    let orphanedMessages = 0
+    let emptyRooms = 0
+
+    // 检查消息是否有对应的房间
+    for (const [roomId, roomMessages] of messages.value.entries()) {
+      const room = rooms.value.find(r => r.id === roomId)
+      if (!room) {
+        issues.push(`发现孤立消息集合: ${roomId} (${roomMessages.length} 条消息)`)
+        orphanedMessages += roomMessages.length
+      }
+    }
+
+    // 检查房间是否有消息
+    for (const room of rooms.value) {
+      const roomMessages = messages.value.get(room.id)
+      if (!roomMessages || roomMessages.length === 0) {
+        emptyRooms++
+      }
+
+      // 检查房间的最后一条消息是否存在
+      if (room.last_message && roomMessages) {
+        const lastMessageExists = roomMessages.some(m => m.id === room.last_message?.id)
+        if (!lastMessageExists) {
+          issues.push(`房间 ${room.name} 的最后一条消息引用无效`)
+        }
+      }
+    }
+
+    const totalMessages = Array.from(messages.value.values()).reduce(
+      (sum, msgs) => sum + msgs.length, 0
+    )
+
+    return {
+      isValid: issues.length === 0,
+      issues,
+      stats: {
+        totalRooms: rooms.value.length,
+        totalMessages,
+        orphanedMessages,
+        emptyRooms
+      }
+    }
+  }
+
+  /**
+   * 修复数据完整性问题
+   */
+  async function repairDataIntegrity(): Promise<void> {
+    const validation = validateDataIntegrity()
+
+    if (validation.isValid) {
+      console.log('✅ 数据完整性检查通过，无需修复')
+      return
+    }
+
+    console.log('🔧 开始修复数据完整性问题...')
+
+    // 清理孤立的消息集合
+    for (const [roomId] of messages.value.entries()) {
+      const room = rooms.value.find(r => r.id === roomId)
+      if (!room) {
+        console.log(`🗑️ 删除孤立消息集合: ${roomId}`)
+        messages.value.delete(roomId)
+        await chatPersistenceService.deleteRoomMessages(roomId)
+      }
+    }
+
+    // 确保所有房间都有消息集合
+    for (const room of rooms.value) {
+      if (!messages.value.has(room.id)) {
+        console.log(`📝 为房间创建空消息集合: ${room.name}`)
+        messages.value.set(room.id, [])
+      }
+    }
+
+    // 重新同步到持久化存储
+    await chatPersistenceService.saveRooms(rooms.value)
+
+    console.log('✅ 数据完整性修复完成')
+  }
 
   return {
     // State
@@ -205,11 +395,15 @@ export const useChatStore = defineStore('chat', () => {
     messages,
     currentRoomId,
     chatSettings,
+    isLoaded,
 
     // Computed
     currentRoom,
     currentMessages,
     conversations,
+
+    // Actions - 初始化
+    loadFromStorage,
 
     // Actions - 设置
     updateChatSettings,
@@ -229,6 +423,12 @@ export const useChatStore = defineStore('chat', () => {
     clearRoomMessages,
 
     // Actions - 搜索
-    searchConversations
+    searchConversations,
+
+    // Actions - 数据管理
+    clearAllData,
+    getStorageInfo,
+    validateDataIntegrity,
+    repairDataIntegrity
   }
 })

@@ -13,6 +13,11 @@ export const useSeiyuuStore = defineStore('seiyuu', () => {
   const groups = ref<SeiyuuGroup[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
+  const isLoaded = ref(false) // 标记是否已从本地存储加载数据
+
+  // 持久化相关常量
+  const STORAGE_KEY_SEIYUU = 'nijichat_seiyuu_list'
+  const STORAGE_KEY_GROUPS = 'nijichat_seiyuu_groups'
 
   // Computed
   const activeSeiyuu = computed(() => {
@@ -27,11 +32,13 @@ export const useSeiyuuStore = defineStore('seiyuu', () => {
   // 设置声优列表
   function setSeiyuuList(list: Seiyuu[]) {
     seiyuuList.value = list
+    saveSeiyuuToStorage() // 自动保存到本地存储
   }
 
   // 添加声优
   function addSeiyuu(seiyuu: Seiyuu) {
     seiyuuList.value.push(seiyuu)
+    saveSeiyuuToStorage() // 自动保存到本地存储
   }
 
   // 更新声优
@@ -43,6 +50,7 @@ export const useSeiyuuStore = defineStore('seiyuu', () => {
         ...updates,
         updated_at: new Date().toISOString()
       }
+      saveSeiyuuToStorage() // 自动保存到本地存储
     }
   }
 
@@ -51,6 +59,7 @@ export const useSeiyuuStore = defineStore('seiyuu', () => {
     const index = seiyuuList.value.findIndex(s => s.id === id)
     if (index !== -1) {
       seiyuuList.value.splice(index, 1)
+      saveSeiyuuToStorage() // 自动保存到本地存储
     }
   }
 
@@ -87,16 +96,87 @@ export const useSeiyuuStore = defineStore('seiyuu', () => {
     return Array.from(tags)
   })
 
+  // === 持久化方法 ===
+
+  /**
+   * 保存声优列表到本地存储
+   */
+  function saveSeiyuuToStorage() {
+    try {
+      localStorage.setItem(STORAGE_KEY_SEIYUU, JSON.stringify(seiyuuList.value))
+    } catch (error) {
+      console.error('保存声优数据到本地存储失败:', error)
+    }
+  }
+
+  /**
+   * 保存群组列表到本地存储
+   */
+  function saveGroupsToStorage() {
+    try {
+      localStorage.setItem(STORAGE_KEY_GROUPS, JSON.stringify(groups.value))
+    } catch (error) {
+      console.error('保存群组数据到本地存储失败:', error)
+    }
+  }
+
+  /**
+   * 从本地存储加载声优和群组数据
+   */
+  function loadFromStorage(): boolean {
+    if (isLoaded.value) return true // 避免重复加载
+
+    try {
+      // 加载声优数据
+      const storedSeiyuu = localStorage.getItem(STORAGE_KEY_SEIYUU)
+      if (storedSeiyuu) {
+        const parsedSeiyuu = JSON.parse(storedSeiyuu) as Seiyuu[]
+        seiyuuList.value = parsedSeiyuu
+        console.log(`✅ 从本地存储加载了 ${parsedSeiyuu.length} 个声优`)
+      }
+
+      // 加载群组数据
+      const storedGroups = localStorage.getItem(STORAGE_KEY_GROUPS)
+      if (storedGroups) {
+        const parsedGroups = JSON.parse(storedGroups) as SeiyuuGroup[]
+        groups.value = parsedGroups
+        console.log(`✅ 从本地存储加载了 ${parsedGroups.length} 个群组`)
+      }
+
+      isLoaded.value = true
+      return seiyuuList.value.length > 0
+    } catch (error) {
+      console.error('从本地存储加载声优数据失败:', error)
+      isLoaded.value = true
+      return false
+    }
+  }
+
+  /**
+   * 清空本地存储的声优数据
+   */
+  function clearStorage() {
+    try {
+      localStorage.removeItem(STORAGE_KEY_SEIYUU)
+      localStorage.removeItem(STORAGE_KEY_GROUPS)
+      console.log('✅ 已清空本地存储的声优数据')
+    } catch (error) {
+      console.error('清空声优数据存储失败:', error)
+    }
+  }
+
   // === 群组管理 ===
 
   // 设置群组列表
   function setGroups(groupList: SeiyuuGroup[]) {
     groups.value = groupList
+    saveGroupsToStorage() // 自动保存到本地存储
   }
 
   // 添加群组
   function addGroup(group: SeiyuuGroup) {
     groups.value.push(group)
+    saveGroupsToStorage() // 自动保存到本地存储
   }
 
   // 更新群组
@@ -108,6 +188,7 @@ export const useSeiyuuStore = defineStore('seiyuu', () => {
         ...updates,
         updated_at: new Date().toISOString()
       }
+      saveGroupsToStorage() // 自动保存到本地存储
     }
   }
 
@@ -116,6 +197,7 @@ export const useSeiyuuStore = defineStore('seiyuu', () => {
     const index = groups.value.findIndex(g => g.id === id)
     if (index !== -1) {
       groups.value.splice(index, 1)
+      saveGroupsToStorage() // 自动保存到本地存储
     }
   }
 
@@ -146,6 +228,8 @@ export const useSeiyuuStore = defineStore('seiyuu', () => {
     seiyuuList.value = []
     groups.value = []
     error.value = null
+    isLoaded.value = false
+    clearStorage() // 清空本地存储
   }
 
   return {
@@ -154,12 +238,19 @@ export const useSeiyuuStore = defineStore('seiyuu', () => {
     groups,
     loading,
     error,
+    isLoaded,
 
     // Computed
     activeSeiyuu,
     seiyuuCount,
     activeCount,
     allTags,
+
+    // Actions - 持久化
+    loadFromStorage,
+    saveSeiyuuToStorage,
+    saveGroupsToStorage,
+    clearStorage,
 
     // Actions - 声优
     setSeiyuuList,

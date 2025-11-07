@@ -235,34 +235,78 @@ function handleUpdateSettings(settings: any) {
 // 初始化
 onMounted(async () => {
   try {
-    // 加载mock数据
-    if (mockService.isMockMode()) {
+    console.log('🚀 开始初始化应用数据...')
+
+    // 1. 首先尝试从本地存储加载声优数据
+    const hasStoredSeiyuu = seiyuuStore.loadFromStorage()
+
+    // 2. 如果本地没有声优数据，从mock服务加载
+    if (!hasStoredSeiyuu && mockService.isMockMode()) {
+      console.log('🎭 从mock服务加载声优数据...')
       const response = await mockService.getSeiyuuList()
       if (response.success && response.data) {
-        seiyuuStore.setSeiyuuList(response.data)
+        seiyuuStore.setSeiyuuList(response.data) // 这会自动保存到本地存储
       }
+    }
 
-      // 创建初始对话
-      const initialConversations = mockService.generateInitialConversations()
-      for (const conv of initialConversations) {
-        const seiyuu = seiyuuStore.getSeiyuuById(conv.seiyuuId)
-        if (seiyuu) {
-          const room = chatStore.createRoom({
-            type: '1v1',
-            name: seiyuu.name,
-            avatar: seiyuu.avatar_url,
-            participants: [seiyuu.id],
-            unread_count: 0
-          })
+    // 3. 从本地存储加载聊天历史数据
+    await chatStore.loadFromStorage()
 
-          // 添加最后一条消息
-          chatStore.addMessage({
-            room_id: room.id,
-            sender_id: seiyuu.id,
-            sender_name: seiyuu.name,
-            sender_avatar: seiyuu.avatar_url,
-            content: conv.lastMessage
-          })
+    // 4. 验证和修复数据完整性
+    const validation = chatStore.validateDataIntegrity()
+    if (!validation.isValid) {
+      console.warn('⚠️ 发现数据完整性问题:', validation.issues)
+      await chatStore.repairDataIntegrity()
+    } else {
+      console.log('✅ 数据完整性检查通过')
+    }
+
+    // 5. 数据完整性检查和初始化
+    if (mockService.isMockMode()) {
+      // 如果没有历史对话，创建初始对话
+      if (chatStore.rooms.length === 0) {
+        console.log('🎭 创建初始演示对话...')
+        const initialConversations = mockService.generateInitialConversations()
+        for (const conv of initialConversations) {
+          const seiyuu = seiyuuStore.getSeiyuuById(conv.seiyuuId)
+          if (seiyuu) {
+            const room = chatStore.createRoom({
+              type: '1v1',
+              name: seiyuu.name,
+              avatar: seiyuu.avatar_url,
+              participants: [seiyuu.id],
+              unread_count: 0
+            })
+
+            // 添加最后一条消息
+            chatStore.addMessage({
+              room_id: room.id,
+              sender_id: seiyuu.id,
+              sender_name: seiyuu.name,
+              sender_avatar: seiyuu.avatar_url,
+              content: conv.lastMessage
+            })
+          }
+        }
+      } else {
+        console.log(`✅ 已加载 ${chatStore.rooms.length} 个历史对话`)
+
+        // 验证历史对话的声优数据完整性
+        const invalidRooms = chatStore.rooms.filter(room => {
+          if (room.type === '1v1' && room.participants.length === 1) {
+            const seiyuu = seiyuuStore.getSeiyuuById(room.participants[0])
+            return !seiyuu
+          }
+          return false
+        })
+
+        if (invalidRooms.length > 0) {
+          console.warn(`⚠️ 发现 ${invalidRooms.length} 个对话缺少声优数据，需要重新加载声优信息`)
+          // 如果发现数据不完整，重新加载声优数据
+          const response = await mockService.getSeiyuuList()
+          if (response.success && response.data) {
+            seiyuuStore.setSeiyuuList(response.data)
+          }
         }
       }
     }
