@@ -60,9 +60,9 @@
         </div>
 
         <!-- 已配置AI模型时的设置 -->
-        <div v-else class="settings-list">
-          <!-- 模型选择 -->
-          <div class="setting-item">
+        <div v-else class="model-settings">
+          <!-- 模型选择（始终显示） -->
+          <div class="setting-item model-selection">
             <label class="setting-label">
               <span>当前模型</span>
               <span class="setting-value">{{ selectedModel?.name || '未选择' }}</span>
@@ -75,57 +75,74 @@
             </select>
           </div>
 
-          <!-- 温度参数 -->
-          <div class="setting-item">
-            <label class="setting-label">
-              <span>创造性</span>
-              <span class="setting-value">{{ settings.temperature }}</span>
-            </label>
-            <input v-model.number="settings.temperature" type="range" min="0" max="1" step="0.1"
-              class="setting-slider" />
-            <div class="slider-labels">
-              <span>保守</span>
-              <span>创新</span>
+          <!-- 高级设置折叠触发器 -->
+          <div class="advanced-settings-toggle" @click="handleToggleAdvancedSettings">
+            <div class="toggle-content">
+              <span class="toggle-text">
+                {{ isAdvancedSettingsExpanded ? '收起高级设置' : '展开高级设置' }}
+              </span>
+              <svg class="toggle-icon" :class="{ expanded: isAdvancedSettingsExpanded }" width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                <path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
+              </svg>
             </div>
           </div>
 
-          <!-- 最大Token数 -->
-          <div class="setting-item">
-            <label class="setting-label">
-              <span>回复长度</span>
-              <span class="setting-value">{{ settings.maxTokens }}</span>
-            </label>
-            <input v-model.number="settings.maxTokens" type="range" min="50" max="1000" step="50"
-              class="setting-slider" />
-            <div class="slider-labels">
-              <span>简短</span>
-              <span>详细</span>
+          <!-- 高级参数设置（可折叠） -->
+          <div class="advanced-settings" :class="{ expanded: isAdvancedSettingsExpanded }">
+            <div class="settings-list">
+              <!-- 温度参数 -->
+              <div class="setting-item">
+                <label class="setting-label">
+                  <span>创造性</span>
+                  <span class="setting-value">{{ settings.temperature }}</span>
+                </label>
+                <input v-model.number="settings.temperature" type="range" min="0" max="1" step="0.1"
+                  class="setting-slider" />
+                <div class="slider-labels">
+                  <span>保守</span>
+                  <span>创新</span>
+                </div>
+              </div>
+
+              <!-- 最大Token数 -->
+              <div class="setting-item">
+                <label class="setting-label">
+                  <span>回复长度</span>
+                  <span class="setting-value">{{ settings.maxTokens }}</span>
+                </label>
+                <input v-model.number="settings.maxTokens" type="range" min="50" max="1000" step="50"
+                  class="setting-slider" />
+                <div class="slider-labels">
+                  <span>简短</span>
+                  <span>详细</span>
+                </div>
+              </div>
+
+              <!-- 上下文长度 -->
+              <div class="setting-item">
+                <label class="setting-label">
+                  <span>记忆长度</span>
+                  <span class="setting-value">{{ settings.contextLength }}条</span>
+                </label>
+                <input v-model.number="settings.contextLength" type="range" min="5" max="50" step="5"
+                  class="setting-slider" />
+                <div class="slider-labels">
+                  <span>短期</span>
+                  <span>长期</span>
+                </div>
+              </div>
             </div>
           </div>
 
-          <!-- 上下文长度 -->
-          <div class="setting-item">
-            <label class="setting-label">
-              <span>记忆长度</span>
-              <span class="setting-value">{{ settings.contextLength }}条</span>
-            </label>
-            <input v-model.number="settings.contextLength" type="range" min="5" max="50" step="5"
-              class="setting-slider" />
-            <div class="slider-labels">
-              <span>短期</span>
-              <span>长期</span>
-            </div>
-          </div>
+          <!-- 应用设置按钮 -->
+          <button @click="handleApplySettings" class="apply-btn">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path
+                d="M10.97 4.97a.235.235 0 0 0-.02.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.061L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-1.071-1.05z" />
+            </svg>
+            应用设置
+          </button>
         </div>
-
-        <!-- 应用设置按钮 -->
-        <button @click="handleApplySettings" class="apply-btn">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-            <path
-              d="M10.97 4.97a.235.235 0 0 0-.02.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.061L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-1.071-1.05z" />
-          </svg>
-          应用设置
-        </button>
       </div>
 
       <!-- 快捷操作 -->
@@ -229,6 +246,7 @@ const chatStore = useChatStore()
 
 // 状态
 const showAIManager = ref(false)
+const isAdvancedSettingsExpanded = ref(false)
 const selectedModelId = ref<string | null>(configStore.config.selected_chat_model || null)
 
 // 设置
@@ -277,6 +295,10 @@ watch(selectedModelId, (newValue) => {
 // 方法
 function handleToggle() {
   emit('toggle')
+}
+
+function handleToggleAdvancedSettings() {
+  isAdvancedSettingsExpanded.value = !isAdvancedSettingsExpanded.value
 }
 
 function handleModelChange() {
@@ -514,6 +536,88 @@ function handleSelectSession(session: any) {
   margin-bottom: 16px;
 }
 
+/* 模型设置容器 */
+.model-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* 高级设置折叠触发器 */
+.advanced-settings-toggle {
+  cursor: pointer;
+  padding: 8px 12px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.advanced-settings-toggle:hover {
+  border-color: #fead00;
+  background: rgba(254, 173, 0, 0.05);
+}
+
+.toggle-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.toggle-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: #4b5563;
+}
+
+.toggle-icon {
+  transition: transform 0.3s ease;
+  color: #6b7280;
+}
+
+.toggle-icon.expanded {
+  transform: rotate(180deg);
+}
+
+/* 高级设置折叠容器 */
+.advanced-settings {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-out, opacity 0.2s ease-out;
+  opacity: 0;
+}
+
+.advanced-settings.expanded {
+  max-height: 400px;
+  opacity: 1;
+  transition: max-height 0.3s ease-in, opacity 0.2s ease-in;
+}
+
+/* 高级设置内部列表 */
+.advanced-settings .settings-list {
+  margin-bottom: 0;
+}
+
+.advanced-settings .setting-item {
+  margin-bottom: 12px;
+}
+
+.advanced-settings .setting-item:last-child {
+  margin-bottom: 0;
+}
+
+/* 模型选择特殊样式 */
+.model-selection {
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 16px;
+  margin-bottom: 8px;
+}
+
+.model-selection .setting-item {
+  margin-bottom: 0;
+}
+
 .setting-item {
   margin-bottom: 16px;
 }
@@ -604,6 +708,7 @@ function handleSelectSession(session: any) {
   align-items: center;
   justify-content: center;
   gap: 6px;
+  margin-top: 8px;
 }
 
 .apply-btn:hover {
@@ -648,8 +753,7 @@ function handleSelectSession(session: any) {
 
 /* 历史记录 */
 .history-list {
-  max-height: 200px;
-  overflow-y: auto;
+  overflow-y: visible;
 }
 
 .history-item {
@@ -716,24 +820,20 @@ function handleSelectSession(session: any) {
 }
 
 /* 滚动条样式 */
-.panel-content::-webkit-scrollbar,
-.history-list::-webkit-scrollbar {
+.panel-content::-webkit-scrollbar {
   width: 4px;
 }
 
-.panel-content::-webkit-scrollbar-track,
-.history-list::-webkit-scrollbar-track {
+.panel-content::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.panel-content::-webkit-scrollbar-thumb,
-.history-list::-webkit-scrollbar-thumb {
+.panel-content::-webkit-scrollbar-thumb {
   background: #d1d5db;
   border-radius: 2px;
 }
 
-.panel-content::-webkit-scrollbar-thumb:hover,
-.history-list::-webkit-scrollbar-thumb:hover {
+.panel-content::-webkit-scrollbar-thumb:hover {
   background: #9ca3af;
 }
 

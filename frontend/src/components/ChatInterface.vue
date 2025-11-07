@@ -3,12 +3,7 @@
     <!-- 聊天头部 -->
     <div class="chat-header">
       <div class="header-avatar">
-        <img
-          v-if="seiyuu?.avatar_url"
-          :src="seiyuu.avatar_url"
-          :alt="seiyuu.name"
-          class="avatar"
-        />
+        <img v-if="seiyuu?.avatar_url" :src="seiyuu.avatar_url" :alt="seiyuu.name" class="avatar" />
         <div v-else class="avatar-placeholder">
           {{ seiyuu?.name?.charAt(0) || '?' }}
         </div>
@@ -16,19 +11,15 @@
 
       <div class="header-info">
         <h3 class="header-name">{{ seiyuu?.name || '未知声优' }}</h3>
-        <p class="header-status">
-          在线 · 声优模拟对话
-          <span class="ai-mode-indicator" :class="{ 'real-ai': useRealAI }">
-            {{ useRealAI ? '🤖 AI模式' : '🎭 演示模式' }}
-          </span>
-        </p>
       </div>
 
       <div class="header-actions">
         <button class="action-btn" title="设置" @click="handleToggleSettings">
           <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor">
-            <path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/>
-            <path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319z"/>
+            <path
+              d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z" />
+            <path
+              d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319z" />
           </svg>
         </button>
       </div>
@@ -40,12 +31,7 @@
         <!-- 欢迎消息 -->
         <div v-if="messages.length === 0" class="welcome-message">
           <div class="welcome-avatar">
-            <img
-              v-if="seiyuu?.avatar_url"
-              :src="seiyuu.avatar_url"
-              :alt="seiyuu.name"
-              class="avatar"
-            />
+            <img v-if="seiyuu?.avatar_url" :src="seiyuu.avatar_url" :alt="seiyuu.name" class="avatar" />
             <div v-else class="avatar-placeholder">
               {{ seiyuu?.name?.charAt(0) || '?' }}
             </div>
@@ -57,23 +43,15 @@
         </div>
 
         <!-- 消息列表 -->
-        <div
-          v-for="message in messages"
-          :key="message.id"
-          :class="[
-            'message-wrapper',
-            message.sender_id === 'user-1' ? 'user-message' : 'seiyuu-message'
-          ]"
-        >
+        <div v-for="message in messages" :key="message.id" :class="[
+          'message-wrapper',
+          message.sender_id === 'user-1' ? 'user-message' : 'seiyuu-message'
+        ]">
           <!-- 声优消息 -->
           <div v-if="message.sender_id !== 'user-1'" class="message-row">
             <div class="message-avatar">
-              <img
-                v-if="message.sender_avatar"
-                :src="message.sender_avatar"
-                :alt="message.sender_name"
-                class="avatar"
-              />
+              <img v-if="message.sender_avatar" :src="message.sender_avatar" :alt="message.sender_name"
+                class="avatar" />
               <div v-else class="avatar-placeholder">
                 {{ message.sender_name?.charAt(0) || '?' }}
               </div>
@@ -105,8 +83,9 @@
             <div class="message-avatar">
               <div class="user-avatar">
                 <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor">
-                  <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/>
-                  <path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1z"/>
+                  <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0z" />
+                  <path
+                    d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1z" />
                 </svg>
               </div>
             </div>
@@ -117,12 +96,7 @@
         <div v-if="isTyping" class="typing-indicator">
           <div class="message-row">
             <div class="message-avatar">
-              <img
-                v-if="seiyuu?.avatar_url"
-                :src="seiyuu.avatar_url"
-                :alt="seiyuu.name"
-                class="avatar"
-              />
+              <img v-if="seiyuu?.avatar_url" :src="seiyuu.avatar_url" :alt="seiyuu.name" class="avatar" />
               <div v-else class="avatar-placeholder">
                 {{ seiyuu?.name?.charAt(0) || '?' }}
               </div>
@@ -146,35 +120,18 @@
     <div class="input-area">
       <div class="input-container">
         <div class="input-wrapper" :class="{ focused: inputFocused }">
-          <textarea
-            ref="messageInput"
-            v-model="currentMessage"
-            placeholder="输入消息..."
-            class="message-input"
-            rows="1"
-            @keydown="handleKeyDown"
-            @focus="inputFocused = true"
-            @blur="inputFocused = false"
-            @input="handleInput"
-          />
+          <textarea ref="messageInput" v-model="currentMessage" placeholder="输入消息..." class="message-input" rows="1"
+            @keydown="handleKeyDown" @focus="inputFocused = true" @blur="inputFocused = false" @input="handleInput" />
 
-          <button
-            :disabled="!canSend"
-            class="send-btn"
-            @click="handleSend"
-          >
+          <button :disabled="!canSend" class="send-btn" @click="handleSend">
             <svg v-if="!isLoading" width="18" height="18" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M15.964.686a.5.5 0 0 0-.65-.65L.767 5.855H.766l-.452.18a.5.5 0 0 0-.082.887l.41.26.001.002 4.995 3.178 3.178 4.995.002.002.26.41a.5.5 0 0 0 .886-.083l6-15Zm-1.833 1.89L6.637 10.07l-.215-.338a.5.5 0 0 0-.154-.154l-.338-.215 7.494-7.494 1.178-.471-.47 1.178Z"/>
+              <path
+                d="M15.964.686a.5.5 0 0 0-.65-.65L.767 5.855H.766l-.452.18a.5.5 0 0 0-.082.887l.41.26.001.002 4.995 3.178 3.178 4.995.002.002.26.41a.5.5 0 0 0 .886-.083l6-15Zm-1.833 1.89L6.637 10.07l-.215-.338a.5.5 0 0 0-.154-.154l-.338-.215 7.494-7.494 1.178-.471-.47 1.178Z" />
             </svg>
             <div v-else class="loading-spinner"></div>
           </button>
         </div>
 
-        <!-- 快捷操作 -->
-        <div class="input-actions">
-          <button class="action-btn" title="表情">😊</button>
-          <button class="action-btn" title="附件">📎</button>
-        </div>
       </div>
 
       <!-- 输入提示 -->
@@ -349,34 +306,12 @@ watch(
 }
 
 .header-name {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
   color: #1f2937;
   margin: 0 0 2px 0;
 }
 
-.header-status {
-  font-size: 13px;
-  color: #10b981;
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.ai-mode-indicator {
-  font-size: 11px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  background: #f3f4f6;
-  color: #6b7280;
-  font-weight: 500;
-}
-
-.ai-mode-indicator.real-ai {
-  background: #dbeafe;
-  color: #2563eb;
-}
 
 .header-actions {
   display: flex;
@@ -561,15 +496,27 @@ watch(
   animation: typing 1.4s infinite ease-in-out;
 }
 
-.typing-dots span:nth-child(1) { animation-delay: 0s; }
-.typing-dots span:nth-child(2) { animation-delay: 0.2s; }
-.typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+.typing-dots span:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.typing-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
 
 @keyframes typing {
-  0%, 60%, 100% {
+
+  0%,
+  60%,
+  100% {
     transform: translateY(0);
     opacity: 0.5;
   }
+
   30% {
     transform: translateY(-8px);
     opacity: 1;
@@ -595,11 +542,12 @@ watch(
   background: #f9fafb;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
-  padding: 12px;
+  padding: 8px 12px;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   gap: 8px;
   transition: all 0.2s;
+  min-height: 44px;
 }
 
 .input-wrapper.focused {
@@ -616,9 +564,10 @@ watch(
   outline: none;
   font-size: 14px;
   line-height: 20px;
-  min-height: 20px;
+  min-height: 24px;
   max-height: 120px;
   font-family: inherit;
+  padding: 2px 0;
 }
 
 .message-input::placeholder {
@@ -662,7 +611,9 @@ watch(
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .input-actions {
