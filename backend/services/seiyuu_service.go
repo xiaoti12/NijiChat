@@ -112,8 +112,8 @@ func (s *SeiyuuService) CreateSeiyuu(ctx context.Context, req *models.CreateSeiy
 		seiyuu.ProfileMarkdown,
 		tagsJSON,
 		seiyuu.Status,
-		seiyuu.CreatedAt,
-		seiyuu.UpdatedAt,
+		database.TimeToString(seiyuu.CreatedAt),
+		database.TimeToString(seiyuu.UpdatedAt),
 	)
 
 	if err != nil {
@@ -168,7 +168,7 @@ func (s *SeiyuuService) UpdateSeiyuu(ctx context.Context, id string, req *models
 		seiyuu.ProfileMarkdown,
 		tagsJSON,
 		seiyuu.Status,
-		seiyuu.UpdatedAt,
+		database.TimeToString(seiyuu.UpdatedAt),
 		id,
 	)
 
@@ -231,6 +231,7 @@ func (s *SeiyuuService) scanSeiyuuRow(row *sql.Row) (*models.Seiyuu, error) {
 	var seiyuu models.Seiyuu
 	var tagsJSON string
 	var avatarURL sql.NullString
+	var createdAtStr, updatedAtStr string
 
 	err := row.Scan(
 		&seiyuu.ID,
@@ -239,8 +240,8 @@ func (s *SeiyuuService) scanSeiyuuRow(row *sql.Row) (*models.Seiyuu, error) {
 		&seiyuu.ProfileMarkdown,
 		&tagsJSON,
 		&seiyuu.Status,
-		&seiyuu.CreatedAt,
-		&seiyuu.UpdatedAt,
+		&createdAtStr,
+		&updatedAtStr,
 	)
 
 	if err != nil {
@@ -258,6 +259,17 @@ func (s *SeiyuuService) scanSeiyuuRow(row *sql.Row) (*models.Seiyuu, error) {
 		seiyuu.Tags = tags
 	}
 
+	// 转换时间字符串为time.Time
+	seiyuu.CreatedAt, err = database.StringToTime(createdAtStr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse created_at: %w", err)
+	}
+
+	seiyuu.UpdatedAt, err = database.StringToTime(updatedAtStr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse updated_at: %w", err)
+	}
+
 	return &seiyuu, nil
 }
 
@@ -269,6 +281,7 @@ func (s *SeiyuuService) scanSeiyuuRows(rows *sql.Rows) ([]*models.Seiyuu, error)
 		var seiyuu models.Seiyuu
 		var tagsJSON string
 		var avatarURL sql.NullString
+		var createdAtStr, updatedAtStr string
 
 		err := rows.Scan(
 			&seiyuu.ID,
@@ -277,8 +290,8 @@ func (s *SeiyuuService) scanSeiyuuRows(rows *sql.Rows) ([]*models.Seiyuu, error)
 			&seiyuu.ProfileMarkdown,
 			&tagsJSON,
 			&seiyuu.Status,
-			&seiyuu.CreatedAt,
-			&seiyuu.UpdatedAt,
+			&createdAtStr,
+			&updatedAtStr,
 		)
 
 		if err != nil {
@@ -294,6 +307,17 @@ func (s *SeiyuuService) scanSeiyuuRows(rows *sql.Rows) ([]*models.Seiyuu, error)
 			seiyuu.Tags = []string{}
 		} else {
 			seiyuu.Tags = tags
+		}
+
+		// 转换时间字符串为time.Time
+		seiyuu.CreatedAt, err = database.StringToTime(createdAtStr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse created_at: %w", err)
+		}
+
+		seiyuu.UpdatedAt, err = database.StringToTime(updatedAtStr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse updated_at: %w", err)
 		}
 
 		seiyuus = append(seiyuus, &seiyuu)

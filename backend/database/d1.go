@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	_ "github.com/syumai/workers/cloudflare/d1" // 注册D1驱动
 )
@@ -116,4 +117,30 @@ func BoolToInt(b bool) int {
 // IntToBool SQLite整数转布尔值
 func IntToBool(i int) bool {
 	return i != 0
+}
+
+// TimeToString 将time.Time转换为SQLite DATETIME兼容的字符串格式
+// 用于在Cloudflare Workers D1环境中存储时间数据
+func TimeToString(t time.Time) string {
+	// 使用SQLite标准的DATETIME格式: "YYYY-MM-DD HH:MM:SS"
+	return t.Format("2006-01-02 15:04:05")
+}
+
+// StringToTime 将字符串转换为time.Time
+// 用于从D1数据库读取时间数据
+func StringToTime(s string) (time.Time, error) {
+	if s == "" {
+		return time.Time{}, nil
+	}
+
+	// 尝试解析SQLite DATETIME格式
+	t, err := time.Parse("2006-01-02 15:04:05", s)
+	if err != nil {
+		// 如果失败，尝试RFC3339格式作为后备
+		t, err = time.Parse(time.RFC3339, s)
+		if err != nil {
+			return time.Time{}, fmt.Errorf("failed to parse time string '%s': %w", s, err)
+		}
+	}
+	return t, nil
 }
