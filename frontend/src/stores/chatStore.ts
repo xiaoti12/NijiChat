@@ -5,7 +5,7 @@
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { Message, Room, Conversation, ChatSettings } from '@/types'
+import type { Message, Room, Conversation, SeiyuuConversationGroup, ChatSettings } from '@/types'
 import { generateId } from '@/utils/crypto'
 import { chatPersistenceService } from '@/services/chatPersistenceService'
 
@@ -242,7 +242,9 @@ export const useChatStore = defineStore('chat', () => {
       } : undefined,
       lastMessage: room.last_message?.content || '',
       timestamp: room.last_message ? new Date(room.last_message.timestamp).toISOString() : new Date(room.created_at).toISOString(),
-      unread: room.unread_count
+      unread: room.unread_count,
+      session_id: room.session_id,
+      session_name: room.session_name
     }))
   })
 
@@ -253,6 +255,77 @@ export const useChatStore = defineStore('chat', () => {
       conv.seiyuu?.name.toLowerCase().includes(lowerKeyword) ||
       conv.lastMessage.toLowerCase().includes(lowerKeyword)
     )
+  }
+
+  // === 分组对话（按声优） ===
+  const groupedConversations = computed((): SeiyuuConversationGroup[] => {
+    const groups = new Map<string, SeiyuuConversationGroup>()
+
+    // 只处理1v1类型的房间
+    const rooms1v1 = rooms.value.filter(room => room.type === '1v1')
+
+    rooms1v1.forEach(room => {
+      const seiyuuId = room.participants[0]
+
+      if (!groups.has(seiyuuId)) {
+        groups.set(seiyuuId, {
+          seiyuuId,
+          seiyuuName: room.name,
+          seiyuuAvatar: room.avatar,
+          rooms: [],
+          totalSessions: 0,
+          totalUnread: 0,
+          lastActive: 0
+        })
+      }
+
+      const group = groups.get(seiyuuId)!
+      group.rooms.push(room)
+      group.totalSessions++
+      group.totalUnread += room.unread_count
+
+      // 更新最后活跃时间
+      if (room.last_message?.timestamp) {
+        group.lastActive = Math.max(group.lastActive, room.last_message.timestamp)
+      }
+      if (room.created_at) {
+        group.lastActive = Math.max(group.lastActive, room.created_at)
+      }
+
+      // 设置最后一条消息（取最新的）
+      if (!group.lastMessage ||
+          (room.last_message && group.lastMessage.timestamp < room.last_message.timestamp)) {
+        group.lastMessage = room.last_message
+      }
+    })
+
+    // 为每个组设置最后一条消息（如果没有的话，取房间创建时间）
+    groups.forEach(group => {
+      if (!group.lastMessage && group.rooms.length > 0) {
+        const latestRoom = group.rooms.reduce((prev, current) =>
+          current.created_at > prev.created_at ? current : prev
+        )
+        group.lastActive = latestRoom.created_at
+      }
+    })
+
+    // 转换为数组并按最后活跃时间排序
+    return Array.from(groups.values()).sort((a, b) => b.lastActive - a.lastActive)
+  })
+
+  // 搜索分组对话
+  function searchGroupedConversations(keyword: string): SeiyuuConversationGroup[] {
+    if (!keyword) return groupedConversations.value
+
+    const lowerKeyword = keyword.toLowerCase()
+    return groupedConversations.value.filter(group =>
+      group.seiyuuName.toLowerCase().includes(lowerKeyword)
+    )
+  }
+
+  // 获取指定声优的分组信息
+  function getSeiyuuGroup(seiyuuId: string): SeiyuuConversationGroup | undefined {
+    return groupedConversations.value.find(group => group.seiyuuId === seiyuuId)
   }
 
   // === 数据管理 ===
@@ -389,6 +462,126 @@ export const useChatStore = defineStore('chat', () => {
     console.log('✅ 数据完整性修复完成')
   }
 
+  // === 会话管理 ===
+
+  /**
+   * 为声优创建新对话会话
+   */
+  function createNewSession(seiyuuId: string, seiyuuName: string, seiyuuAvatar?: string): Room {
+    const sessionId = generateId()
+    const now = Date.now()
+
+    // 生成默认会话名称
+    const sessionCount = rooms.value.filter(room =>
+      room.type === '1v1' &&
+      room.participants.includes(seiyuuId)
+    ).length
+
+    const sessionName = `对话 ${sessionCount + 1}`
+
+    const newRoom: Room = {
+      id: generateId(),
+      type: '1v1',
+      name: seiyuuName,
+      avatar: seiyuuAvatar,
+      participants: [seiyuuId],
+      unread_count: 0,
+      created_at: now,
+      session_id: sessionId,
+      session_name: sessionName
+    }
+
+    rooms.value.push(newRoom)
+    messages.value.set(newRoom.id, [])
+
+    // 持久化保存
+    chatPersistenceService.addRoom(newRoom).catch(error => {
+      console.error('保存新会话房间到本地存储失败:', error)
+    })
+
+    console.log(`✅ 为声优 ${seiyuuName} 创建新会话: ${sessionName}`)
+    return newRoom
+  }
+
+  /**
+   * 获取声优的所有会话
+   */
+  function getSessionsBySeiyuu(seiyuuId: string): Room[] {
+    return rooms.value.filter(room =>
+      room.type === '1v1' &&
+      room.participants.includes(seiyuuId)
+    ).sort((a, b) => b.created_at - a.created_at)
+  }
+
+  /**
+   * 切换到指定会话
+   */
+  function switchToSession(roomId: string) {
+    const room = getRoom(roomId)
+    if (room) {
+      setCurrentRoom(roomId)
+      console.log(`🔄 切换到会话: ${room.session_name || room.name}`)
+    }
+  }
+
+  /**
+   * 更新会话名称
+   */
+  function updateSessionName(roomId: string, newName: string) {
+    const room = getRoom(roomId)
+    if (room) {
+      room.session_name = newName
+      updateRoom(roomId, { session_name: newName })
+      console.log(`📝 会话名称已更新: ${newName}`)
+    }
+  }
+
+  /**
+   * 删除会话
+   */
+  function deleteSession(roomId: string) {
+    const room = getRoom(roomId)
+    if (room) {
+      console.log(`🗑️ 删除会话: ${room.session_name || room.name}`)
+      deleteRoom(roomId)
+    }
+  }
+
+  /**
+   * 获取会话的友好显示名称
+   */
+  function getSessionDisplayName(room: Room): string {
+    return room.session_name || `对话 ${room.created_at}`
+  }
+
+  /**
+   * 数据迁移：为现有房间分配session_id
+   */
+  function migrateExistingRoomsToSessions() {
+    const roomsWithoutSession = rooms.value.filter(room =>
+      !room.session_id && room.type === '1v1'
+    )
+
+    if (roomsWithoutSession.length > 0) {
+      console.log(`🔄 正在为 ${roomsWithoutSession.length} 个现有房间分配会话ID...`)
+
+      roomsWithoutSession.forEach(room => {
+        room.session_id = generateId()
+        room.session_name = '默认对话'
+
+        // 持久化更新
+        chatPersistenceService.updateRoom(room.id, {
+          session_id: room.session_id,
+          session_name: room.session_name
+        }).catch(error => {
+          console.error(`更新房间 ${room.id} 的会话信息失败:`, error)
+        })
+      })
+
+      console.log(`✅ 已为 ${roomsWithoutSession.length} 个现有房间分配会话ID`)
+    }
+  }
+
   return {
     // State
     rooms,
@@ -401,6 +594,7 @@ export const useChatStore = defineStore('chat', () => {
     currentRoom,
     currentMessages,
     conversations,
+    groupedConversations,
 
     // Actions - 初始化
     loadFromStorage,
@@ -424,11 +618,22 @@ export const useChatStore = defineStore('chat', () => {
 
     // Actions - 搜索
     searchConversations,
+    searchGroupedConversations,
+    getSeiyuuGroup,
 
     // Actions - 数据管理
     clearAllData,
     getStorageInfo,
     validateDataIntegrity,
-    repairDataIntegrity
+    repairDataIntegrity,
+
+    // Actions - 会话管理
+    createNewSession,
+    getSessionsBySeiyuu,
+    switchToSession,
+    updateSessionName,
+    deleteSession,
+    getSessionDisplayName,
+    migrateExistingRoomsToSessions
   }
 })

@@ -56,54 +56,62 @@
 
     <!-- 对话列表 -->
     <div class="conversations-container">
-      <!-- 1v1 对话分组 -->
-      <div v-if="filteredConversations.length > 0" class="conversation-section">
+      <!-- 声优分组列表 -->
+      <div v-if="filteredSeiyuuGroups.length > 0" class="conversation-section">
         <div v-if="!props.collapsed" class="section-header">
-          <h3 class="section-title">对话</h3>
-          <span class="section-count">{{ filteredConversations.length }}</span>
+          <h3 class="section-title">声优</h3>
+          <span class="section-count">{{ filteredSeiyuuGroups.length }}</span>
         </div>
 
         <div :class="['conversation-list', { collapsed: props.collapsed }]">
           <div
-            v-for="conversation in filteredConversations"
-            :key="conversation.id"
+            v-for="group in filteredSeiyuuGroups"
+            :key="group.seiyuuId"
             :class="[
               'conversation-item',
-              { active: conversation.id === currentRoomId },
+              { active: group.seiyuuId === props.currentSeiyuuId },
               { collapsed: props.collapsed }
             ]"
-            @click="handleSelectConversation(conversation.id)"
+            @click="handleSelectSeiyuu(group.seiyuuId)"
           >
             <div class="conversation-avatar">
               <img
-                v-if="conversation.seiyuu?.avatar"
-                :src="conversation.seiyuu.avatar"
-                :alt="conversation.seiyuu.name"
+                v-if="group.seiyuuAvatar"
+                :src="group.seiyuuAvatar"
+                :alt="group.seiyuuName"
                 class="avatar"
               />
               <div v-else class="avatar-placeholder">
-                {{ conversation.seiyuu?.name?.charAt(0) || '?' }}
+                {{ group.seiyuuName.charAt(0) || '?' }}
               </div>
               <!-- 未读徽章 -->
-              <span v-if="conversation.unread > 0" class="conversation-badge">
-                {{ conversation.unread > 99 ? '99+' : conversation.unread }}
+              <span v-if="group.totalUnread > 0" class="conversation-badge">
+                {{ group.totalUnread > 99 ? '99+' : group.totalUnread }}
+              </span>
+              <!-- 会话数量徽章 -->
+              <span v-if="group.totalSessions > 1" class="session-count-badge">
+                {{ group.totalSessions }}
               </span>
             </div>
 
             <div v-if="!props.collapsed" class="conversation-content">
               <div class="conversation-header">
-                <h4 class="conversation-name">{{ conversation.seiyuu?.name || '未知声优' }}</h4>
-                <span class="conversation-time">{{ formatTime(conversation.timestamp) }}</span>
+                <h4 class="conversation-name">{{ group.seiyuuName }}</h4>
+                <span class="conversation-time">{{ formatTime(group.lastActive) }}</span>
               </div>
               <div class="conversation-preview">
-                <p class="last-message">{{ conversation.lastMessage }}</p>
+                <p class="last-message">{{ group.lastMessage?.content || '暂无消息' }}</p>
+              </div>
+              <div class="conversation-meta">
+                <span class="session-info">{{ group.totalSessions }} 个对话</span>
               </div>
             </div>
             <!-- 收起状态下的悬浮提示 -->
             <div v-else class="conversation-tooltip">
               <div class="tooltip-content">
-                <div class="tooltip-name">{{ conversation.seiyuu?.name || '未知声优' }}</div>
-                <div class="tooltip-preview">{{ conversation.lastMessage }}</div>
+                <div class="tooltip-name">{{ group.seiyuuName }}</div>
+                <div class="tooltip-preview">{{ group.lastMessage?.content || '暂无消息' }}</div>
+                <div class="tooltip-meta">{{ group.totalSessions }} 个对话</div>
               </div>
             </div>
           </div>
@@ -113,16 +121,16 @@
 
 
       <!-- 空状态 -->
-      <div v-if="filteredConversations.length === 0 && !searchQuery" class="empty-conversations">
+      <div v-if="filteredSeiyuuGroups.length === 0 && !searchQuery" class="empty-conversations">
         <div class="empty-icon">💭</div>
-        <p class="empty-text">还没有对话呢</p>
-        <button @click="handleNewConversation" class="btn btn-primary">开始聊天</button>
+        <p class="empty-text">还没有声优对话呢</p>
+        <button @click="handleNewConversation" class="btn btn-primary">浏览声优库</button>
       </div>
 
       <!-- 搜索无结果 -->
-      <div v-if="filteredConversations.length === 0 && searchQuery" class="empty-conversations">
+      <div v-if="filteredSeiyuuGroups.length === 0 && searchQuery" class="empty-conversations">
         <div class="empty-icon">🔍</div>
-        <p class="empty-text">没有找到匹配的对话</p>
+        <p class="empty-text">没有找到匹配的声优</p>
       </div>
     </div>
   </div>
@@ -131,18 +139,21 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import type { Conversation } from '@/types'
+import type { Conversation, SeiyuuConversationGroup } from '@/types'
 
 // Props
 const props = defineProps<{
   conversations: Conversation[]
   currentRoomId: string | null
+  currentSeiyuuId: string | null
+  seiyuuGroups: SeiyuuConversationGroup[]
   collapsed?: boolean
 }>()
 
 // Emits
 const emit = defineEmits<{
   selectConversation: [roomId: string]
+  selectSeiyuu: [seiyuuId: string]
   newConversation: []
   toggle: []
 }>()
@@ -165,21 +176,24 @@ const dualTheaters = ref<DualTheater[]>([])
 const groupTheaters = ref<GroupTheater[]>([])
 
 // 计算属性
-const filteredConversations = computed(() => {
+const filteredSeiyuuGroups = computed(() => {
   if (!searchQuery.value) {
-    return props.conversations
+    return props.seiyuuGroups
   }
 
   const query = searchQuery.value.toLowerCase()
-  return props.conversations.filter(conv =>
-    conv.seiyuu?.name.toLowerCase().includes(query) ||
-    conv.lastMessage.toLowerCase().includes(query)
+  return props.seiyuuGroups.filter(group =>
+    group.seiyuuName.toLowerCase().includes(query)
   )
 })
 
 // 方法
 function handleSelectConversation(roomId: string) {
   emit('selectConversation', roomId)
+}
+
+function handleSelectSeiyuu(seiyuuId: string) {
+  emit('selectSeiyuu', seiyuuId)
 }
 
 function handleNewConversation() {
@@ -699,6 +713,44 @@ function formatTime(timestamp: string): string {
   min-width: 16px;
 }
 
+/* 会话数量徽章 */
+.session-count-badge {
+  background: rgba(254, 173, 0, 0.2);
+  color: #fead00;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 4px;
+  border-radius: 8px;
+  border: 1px solid #fead00;
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  border: 1px solid white;
+}
+
+.conversation-item.collapsed .session-count-badge {
+  bottom: -4px;
+  right: -4px;
+  font-size: 9px;
+  padding: 1px 3px;
+}
+
+/* 对话元信息 */
+.conversation-meta {
+  display: flex;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.session-info {
+  font-size: 11px;
+  color: #9ca3af;
+  background: rgba(156, 163, 175, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
 /* 悬浮提示 */
 .conversation-tooltip {
   position: absolute;
@@ -745,6 +797,16 @@ function formatTime(timestamp: string): string {
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 180px;
+}
+
+.tooltip-meta {
+  font-size: 11px;
+  color: #9ca3af;
+  background: rgba(156, 163, 175, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  align-self: flex-start;
+  font-weight: 500;
 }
 
 /* 收起状态下的控制按钮 */

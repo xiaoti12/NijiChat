@@ -24,6 +24,7 @@ export type {
   GroupTheater,
   TheaterStatus,
   TheaterMessage,
+  SeiyuuConversationGroup,
   ChatSettings
 } from './chat'
 

@@ -2,10 +2,13 @@
   <div :class="['chat-right-panel', { collapsed }]">
     <!-- 面板头部 -->
     <div class="panel-header">
-      <h3 class="panel-title">聊天设置</h3>
+      <h3 class="panel-title">
+        {{ props.seiyuuGroup?.seiyuuName ? `${props.seiyuuGroup.seiyuuName} - 会话管理` : '聊天设置' }}
+      </h3>
       <button @click="handleToggle" class="toggle-btn" :title="collapsed ? '展开面板' : '收起面板'">
         <svg :class="{ rotated: collapsed }" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-          <path d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+          <path
+            d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z" />
         </svg>
       </button>
     </div>
@@ -20,12 +23,7 @@
 
         <div class="seiyuu-profile">
           <div class="profile-avatar">
-            <img
-              v-if="seiyuu?.avatar_url"
-              :src="seiyuu.avatar_url"
-              :alt="seiyuu.name"
-              class="avatar"
-            />
+            <img v-if="seiyuu?.avatar_url" :src="seiyuu.avatar_url" :alt="seiyuu.name" class="avatar" />
             <div v-else class="avatar-placeholder">
               {{ seiyuu?.name?.charAt(0) || '?' }}
             </div>
@@ -46,7 +44,8 @@
           <h4 class="section-title">AI模型配置</h4>
           <button @click="showAIManager = true" class="manage-btn" title="管理AI模型">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311c.446.82.023 1.841-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413 1.4-2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872l-.1-.34zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z"/>
+              <path
+                d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311c.446.82.023 1.841-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413 1.4-2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872l-.1-.34zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z" />
             </svg>
           </button>
         </div>
@@ -70,11 +69,7 @@
             </label>
             <select v-model="selectedModelId" class="setting-select" @change="handleModelChange">
               <option value="">请选择AI模型</option>
-              <option
-                v-for="model in availableChatModels"
-                :key="model.id"
-                :value="model.id"
-              >
+              <option v-for="model in availableChatModels" :key="model.id" :value="model.id">
                 {{ model.name }} ({{ model.model_name }})
               </option>
             </select>
@@ -86,14 +81,8 @@
               <span>创造性</span>
               <span class="setting-value">{{ settings.temperature }}</span>
             </label>
-            <input
-              v-model.number="settings.temperature"
-              type="range"
-              min="0"
-              max="1"
-              step="0.1"
-              class="setting-slider"
-            />
+            <input v-model.number="settings.temperature" type="range" min="0" max="1" step="0.1"
+              class="setting-slider" />
             <div class="slider-labels">
               <span>保守</span>
               <span>创新</span>
@@ -106,14 +95,8 @@
               <span>回复长度</span>
               <span class="setting-value">{{ settings.maxTokens }}</span>
             </label>
-            <input
-              v-model.number="settings.maxTokens"
-              type="range"
-              min="50"
-              max="1000"
-              step="50"
-              class="setting-slider"
-            />
+            <input v-model.number="settings.maxTokens" type="range" min="50" max="1000" step="50"
+              class="setting-slider" />
             <div class="slider-labels">
               <span>简短</span>
               <span>详细</span>
@@ -126,14 +109,8 @@
               <span>记忆长度</span>
               <span class="setting-value">{{ settings.contextLength }}条</span>
             </label>
-            <input
-              v-model.number="settings.contextLength"
-              type="range"
-              min="5"
-              max="50"
-              step="5"
-              class="setting-slider"
-            />
+            <input v-model.number="settings.contextLength" type="range" min="5" max="50" step="5"
+              class="setting-slider" />
             <div class="slider-labels">
               <span>短期</span>
               <span>长期</span>
@@ -144,7 +121,8 @@
         <!-- 应用设置按钮 -->
         <button @click="handleApplySettings" class="apply-btn">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-            <path d="M10.97 4.97a.235.235 0 0 0-.02.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.061L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-1.071-1.05z"/>
+            <path
+              d="M10.97 4.97a.235.235 0 0 0-.02.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.061L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-1.071-1.05z" />
           </svg>
           应用设置
         </button>
@@ -157,52 +135,52 @@
         </div>
 
         <div class="quick-actions">
-          <button @click="handleResetChat" class="quick-action-btn">
+          <button @click="handleNewSession" class="quick-action-btn">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M11.534 7h3.932a.25.25 0 0 1 .192.41l-1.966 2.36a.25.25 0 0 1-.384 0l-1.966-2.36a.25.25 0 0 1 .192-.41zm-11 2h3.932a.25.25 0 0 0 .192-.41L2.692 6.23a.25.25 0 0 0-.384 0L.342 8.59A.25.25 0 0 0 .534 9z"/>
-              <path fill-rule="evenodd" d="M8 3c-1.552 0-2.94.707-3.857 1.818a.5.5 0 1 1-.771-.636A6.002 6.002 0 0 1 13.917 7H12.9A5.002 5.002 0 0 0 8 3zM3.1 9a5.002 5.002 0 0 0 8.757 2.182.5.5 0 1 1 .771.636A6.002 6.002 0 0 1 2.083 9H3.1z"/>
+              <path
+                d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z" />
             </svg>
-            重置对话
+            开启新对话
           </button>
 
-          <button @click="handleExportChat" class="quick-action-btn">
+          <button @click="handleRenameSession" class="quick-action-btn" v-if="sessionList.length > 0">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
-              <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/>
+              <path
+                d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708l-3-3zm.646 6.061L9.793 2.5 3.293 9H3.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.207l6.5-6.5zm-7.468 7.468A.5.5 0 0 1 6 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.5-.5V10h-.5a.499.499 0 0 1-.175-.032l-.179.178a.5.5 0 0 0-.11.168l-2 5a.5.5 0 0 0 .65.65l5-2a.5.5 0 0 0 .168-.11l.178-.178z" />
             </svg>
-            导出聊天记录
+            重命名会话
           </button>
 
-          <button @click="handleChangeModel" class="quick-action-btn">
+          <button @click="handleDeleteSession" class="quick-action-btn danger-btn" v-if="sessionList.length > 0">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M1 2.828c.885-.37 2.154-.769 3.388-.893 1.33-.134 2.458.063 3.112.752v9.746c-.935-.53-2.12-.603-3.213-.493-1.18.12-2.37.461-3.287.811V2.828zm7.5-.141c.654-.689 1.782-.886 3.112-.752 1.234.124 2.503.523 3.388.893v9.923c-.918-.35-2.107-.692-3.287-.81-1.094-.111-2.278-.039-3.213.492V2.687zM8 1.783C7.015.936 5.587.81 4.287.94c-1.514.153-3.042.672-3.994 1.105A.5.5 0 0 0 0 2.5v11a.5.5 0 0 0 .707.455c.882-.4 2.303-.881 3.68-1.02 1.409-.142 2.59.087 3.223.877a.5.5 0 0 0 .78 0c.633-.79 1.814-1.019 3.222-.877 1.378.139 2.8.62 3.681 1.02A.5.5 0 0 0 16 13.5v-11a.5.5 0 0 0-.293-.455c-.952-.433-2.48-.952-3.994-1.105C10.413.809 8.985.936 8 1.783z"/>
+              <path
+                d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z" />
+              <path fill-rule="evenodd"
+                d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z" />
             </svg>
-            切换AI模型
+            删除当前会话
           </button>
         </div>
       </div>
 
       <!-- 对话历史 -->
-      <div class="panel-section">
+      <div class="panel-section" v-if="props.seiyuuGroup">
         <div class="section-header">
-          <h4 class="section-title">对话历史</h4>
-          <span class="section-count">{{ historyItems.length }}</span>
+          <h4 class="section-title">会话列表</h4>
+          <span class="section-count">{{ sessionList.length }}</span>
         </div>
 
         <div class="history-list">
-          <div
-            v-for="item in historyItems"
-            :key="item.id"
-            :class="['history-item', { active: item.active }]"
-            @click="handleSelectHistory(item)"
-          >
-            <div class="history-time">{{ item.time }}</div>
-            <div class="history-preview">{{ item.preview }}</div>
+          <div v-for="session in sessionList" :key="session.id" :class="['history-item', { active: session.active }]"
+            @click="handleSelectSession(session)">
+            <div class="history-time">{{ session.time }}</div>
+            <div class="history-session-name">{{ session.name }}</div>
+            <div class="history-preview">{{ session.preview }}</div>
           </div>
 
-          <div v-if="historyItems.length === 0" class="empty-history">
+          <div v-if="sessionList.length === 0" class="empty-history">
             <div class="empty-icon">📝</div>
-            <p>暂无历史记录</p>
+            <p>暂无其他会话</p>
           </div>
         </div>
       </div>
@@ -226,13 +204,15 @@
 import { ref, reactive, computed, watch } from 'vue'
 import { useAIModelStore } from '@/stores/aiModelStore'
 import { useConfigStore } from '@/stores/configStore'
-import type { Room, Seiyuu } from '@/types'
+import { useChatStore } from '@/stores/chatStore'
+import type { Room, Seiyuu, SeiyuuConversationGroup } from '@/types'
 import AIModelManager from './AIModelManager.vue'
 
 // Props
 const props = defineProps<{
   room: Room
   seiyuu: Seiyuu | null
+  seiyuuGroup: SeiyuuConversationGroup | null
   collapsed: boolean
 }>()
 
@@ -245,6 +225,7 @@ const emit = defineEmits<{
 // Store
 const aiModelStore = useAIModelStore()
 const configStore = useConfigStore()
+const chatStore = useChatStore()
 
 // 状态
 const showAIManager = ref(false)
@@ -271,21 +252,22 @@ const hasAnyModels = computed(() => {
   return aiModelStore.models.length > 0
 })
 
-// 历史记录
-const historyItems = ref([
-  {
-    id: 1,
-    time: '14:30',
-    preview: '今天天气真好呢～',
-    active: false
-  },
-  {
-    id: 2,
-    time: '14:25',
-    preview: '你好，初次见面！',
-    active: true
-  }
-])
+// 历史记录 - 获取当前声优的所有会话
+const sessionList = computed(() => {
+  if (!props.seiyuu) return []
+
+  return chatStore.getSessionsBySeiyuu(props.seiyuu.id).map(room => ({
+    id: room.id,
+    name: chatStore.getSessionDisplayName(room),
+    time: new Date(room.created_at).toLocaleTimeString('zh-CN', {
+      hour: '2-digit',
+      minute: '2-digit'
+    }),
+    preview: room.last_message?.content || '暂无消息',
+    active: props.room.id === room.id,
+    session_name: room.session_name
+  }))
+})
 
 // 监听selectedModelId变化，自动更新settings
 watch(selectedModelId, (newValue) => {
@@ -317,30 +299,59 @@ function handleApplySettings() {
   console.log('设置已应用:', settings)
 }
 
-function handleResetChat() {
-  if (confirm('确定要重置当前对话吗？这将清除所有聊天记录。')) {
-    // 实现重置逻辑
-    console.log('重置对话')
+function handleNewSession() {
+  if (!props.seiyuu) return
+
+  if (confirm('确定要开启新对话吗？将创建一个全新的对话会话。')) {
+    const newRoom = chatStore.createNewSession(
+      props.seiyuu.id,
+      props.seiyuu.name,
+      props.seiyuu.avatar_url
+    )
+
+    // 切换到新会话
+    chatStore.switchToSession(newRoom.id)
+    console.log('✅ 已创建新对话会话')
   }
 }
 
-function handleExportChat() {
-  // 实现导出逻辑
-  console.log('导出聊天记录')
+function handleRenameSession() {
+  if (!props.room) return
+
+  const currentName = props.room.session_name || chatStore.getSessionDisplayName(props.room)
+  const newName = prompt('请输入新的会话名称:', currentName)
+
+  if (newName && newName.trim() && newName !== currentName) {
+    chatStore.updateSessionName(props.room.id, newName.trim())
+    console.log('✅ 会话已重命名为:', newName)
+  }
 }
 
-function handleChangeModel() {
-  // 实现模型切换逻辑
-  console.log('切换AI模型')
+function handleDeleteSession() {
+  if (!props.room) return
+
+  const confirmDelete = confirm(`确定要删除会话"${props.room.session_name || '当前对话'}"吗？这将清除该会话的所有聊天记录。`)
+
+  if (confirmDelete) {
+    const seiyuuId = props.seiyuu?.id
+    chatStore.deleteSession(props.room.id)
+
+    // 删除后，如果该声优还有其他会话，切换到最新的一个
+    if (seiyuuId) {
+      const sessions = chatStore.getSessionsBySeiyuu(seiyuuId)
+      if (sessions.length > 0) {
+        chatStore.switchToSession(sessions[0].id)
+      }
+    }
+
+    console.log('✅ 会话已删除')
+  }
 }
 
-function handleSelectHistory(item: any) {
-  // 切换历史记录激活状态
-  historyItems.value.forEach(h => h.active = false)
-  item.active = true
-
-  // 实现历史记录选择逻辑
-  console.log('选择历史记录:', item)
+function handleSelectSession(session: any) {
+  // 切换到选中的会话
+  chatStore.switchToSession(session.id)
+  console.log('切换到会话:', session.name)
 }
 </script>
 
@@ -629,6 +640,12 @@ function handleSelectHistory(item: any) {
   color: #fead00;
 }
 
+.quick-action-btn.danger-btn:hover {
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.05);
+  color: #ef4444;
+}
+
 /* 历史记录 */
 .history-list {
   max-height: 200px;
@@ -661,6 +678,16 @@ function handleSelectHistory(item: any) {
   font-size: 11px;
   color: #9ca3af;
   font-weight: 500;
+}
+
+.history-session-name {
+  font-size: 12px;
+  color: #374151;
+  font-weight: 600;
+  margin: 2px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .history-preview {

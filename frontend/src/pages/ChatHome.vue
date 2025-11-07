@@ -1,8 +1,17 @@
 <template>
   <div class="chat-page">
     <!-- 左侧对话列表 -->
-    <ChatSidebar :conversations="conversations" :current-room-id="currentRoomId" :collapsed="leftSidebarCollapsed"
-      @select-conversation="handleSelectConversation" @new-conversation="handleNewConversation" @toggle="toggleLeftSidebar" />
+    <ChatSidebar
+      :conversations="conversations"
+      :seiyuu-groups="seiyuuGroups"
+      :current-room-id="currentRoomId"
+      :current-seiyuu-id="currentSeiyuuId"
+      :collapsed="leftSidebarCollapsed"
+      @select-conversation="handleSelectConversation"
+      @select-seiyuu="handleSelectSeiyuu"
+      @new-conversation="handleNewConversation"
+      @toggle="toggleLeftSidebar"
+    />
 
     <!-- 中间聊天区域 -->
     <ChatInterface v-if="currentRoom" ref="chatInterfaceRef" :room="currentRoom" :messages="currentMessages" :seiyuu="currentSeiyuu"
@@ -50,8 +59,15 @@
     </div>
 
     <!-- 右侧设置面板 -->
-    <ChatRightPanel v-if="currentRoom" :room="currentRoom" :seiyuu="currentSeiyuu" :collapsed="rightPanelCollapsed"
-      @toggle="toggleRightPanel" @update-settings="handleUpdateSettings" />
+    <ChatRightPanel
+      v-if="currentRoom"
+      :room="currentRoom"
+      :seiyuu="currentSeiyuu"
+      :seiyuu-group="currentSeiyuuGroup"
+      :collapsed="rightPanelCollapsed"
+      @toggle="toggleRightPanel"
+      @update-settings="handleUpdateSettings"
+    />
 
     <!-- AI模型管理器弹窗 -->
     <div v-if="showAIManager" class="ai-manager-overlay" @click="showAIManager = false">
@@ -97,6 +113,7 @@ const rightPanelCollapsed = ref(false)
 const loading = ref(false)
 const showAIManager = ref(false)
 const chatInterfaceRef = ref()
+const currentSeiyuuId = ref<string | null>(null) // 当前选中的声优ID
 
 // 计算属性
 const conversations = computed(() => chatStore.conversations)
@@ -113,6 +130,15 @@ const currentSeiyuu = computed((): Seiyuu | null => {
   return null
 })
 
+// 声优分组列表
+const seiyuuGroups = computed(() => chatStore.groupedConversations)
+
+// 当前声优的分组信息
+const currentSeiyuuGroup = computed(() => {
+  if (!currentSeiyuuId.value) return null
+  return chatStore.getSeiyuuGroup(currentSeiyuuId.value)
+})
+
 // AI配置状态
 const hasChatModels = computed(() => aiModelStore.chatModels.length > 0)
 
@@ -125,6 +151,36 @@ const useRealAI = computed(() => {
 // 事件处理
 function handleSelectConversation(roomId: string) {
   chatStore.setCurrentRoom(roomId)
+  // 更新当前选中的声优ID
+  const room = chatStore.getRoom(roomId)
+  if (room && room.type === '1v1' && room.participants.length > 0) {
+    currentSeiyuuId.value = room.participants[0]
+  }
+}
+
+function handleSelectSeiyuu(seiyuuId: string) {
+  // 选中声优时，设置当前声优ID
+  currentSeiyuuId.value = seiyuuId
+
+  // 获取该声优的所有会话
+  const sessions = chatStore.getSessionsBySeiyuu(seiyuuId)
+
+  // 如果有会话，切换到最新的一个
+  if (sessions.length > 0) {
+    chatStore.setCurrentRoom(sessions[0].id)
+    console.log(`🔄 切换到声优的现有会话: ${sessions[0].session_name}`)
+  } else {
+    // 如果没有会话，创建一个新的
+    const seiyuu = seiyuuStore.getSeiyuuById(seiyuuId)
+    if (seiyuu) {
+      const newRoom = chatStore.createNewSession(seiyuu.id, seiyuu.name, seiyuu.avatar_url)
+      chatStore.setCurrentRoom(newRoom.id)
+      console.log(`✨ 为声优创建第一个会话: ${newRoom.session_name}`)
+    }
+  }
+
+  // 确保右侧面板展开，显示会话列表
+  rightPanelCollapsed.value = false
 }
 
 function handleNewConversation() {
@@ -281,31 +337,49 @@ onMounted(async () => {
       console.log('✅ 数据完整性检查通过')
     }
 
+    // 5. 数据迁移：为现有房间分配会话ID
+    chatStore.migrateExistingRoomsToSessions()
+
 
     // 处理路由参数
     const seiyuuId = route.query.seiyuuId as string
     if (seiyuuId) {
-      // 查找或创建该声优的对话
-      const existingRoom = chatStore.rooms.find(room =>
-        room.type === '1v1' && room.participants.includes(seiyuuId)
-      )
+      const seiyuu = seiyuuStore.getSeiyuuById(seiyuuId)
+      if (seiyuu) {
+        // 检查该声优是否已有会话
+        const existingSessions = chatStore.getSessionsBySeiyuu(seiyuu.id)
 
-      if (existingRoom) {
-        chatStore.setCurrentRoom(existingRoom.id)
-      } else {
-        // 创建新对话
-        const seiyuu = seiyuuStore.getSeiyuuById(seiyuuId)
-        if (seiyuu) {
-          const room = chatStore.createRoom({
-            type: '1v1',
-            name: seiyuu.name,
-            avatar: seiyuu.avatar_url,
-            participants: [seiyuu.id],
-            unread_count: 0
-          })
-          chatStore.setCurrentRoom(room.id)
+        if (existingSessions.length > 0) {
+          // 如果有现有会话，切换到最新的一个
+          chatStore.switchToSession(existingSessions[0].id)
+          currentSeiyuuId.value = seiyuu.id
+          console.log(`✅ 切换到声优 ${seiyuu.name} 的现有会话`)
+        } else {
+          // 如果没有现有会话，创建新会话
+          const newRoom = chatStore.createNewSession(
+            seiyuu.id,
+            seiyuu.name,
+            seiyuu.avatar_url
+          )
+          chatStore.setCurrentRoom(newRoom.id)
+          currentSeiyuuId.value = seiyuu.id
+          console.log(`✅ 为声优 ${seiyuu.name} 创建第一个会话`)
         }
       }
+    } else if (chatStore.rooms.length > 0) {
+      // 没有路由参数但有现有房间，恢复到最后一次的会话状态
+      const lastRoom = chatStore.rooms.reduce((prev, current) =>
+        current.created_at > prev.created_at ? current : prev
+      )
+
+      if (lastRoom.type === '1v1' && lastRoom.participants.length > 0) {
+        chatStore.setCurrentRoom(lastRoom.id)
+        currentSeiyuuId.value = lastRoom.participants[0]
+        console.log(`✅ 恢复到上次会话: ${lastRoom.session_name || '默认对话'}`)
+      }
+    } else {
+      // 没有任何房间数据，保持空状态
+      console.log('ℹ️ 暂无对话数据，等待用户开始聊天')
     }
   } catch (error) {
     console.error('初始化失败:', error)

@@ -27,6 +27,8 @@ export interface Room {
   last_message?: Message        // 最后一条消息
   unread_count: number          // 未读消息数
   created_at: number            // 创建时间
+  session_id?: string          // 会话ID，用于区分同一声优的不同对话会话
+  session_name?: string        // 会话名称，用于用户识别不同会话
 }
 
 // 房间类型
@@ -44,6 +46,8 @@ export interface Conversation {
   lastMessage: string
   timestamp: string
   unread: number
+  session_id?: string          // 会话ID，用于区分同一声优的不同对话会话
+  session_name?: string        // 会话名称
 }
 
 // 双声优剧场
@@ -88,6 +92,18 @@ export interface TheaterMessage extends Message {
   seiyuu_id: string             // 发言的声优ID
   selection_reason?: string     // AI选择该声优的原因
   confidence?: number           // 选择置信度
+}
+
+// 按声优分组的对话
+export interface SeiyuuConversationGroup {
+  seiyuuId: string              // 声优ID
+  seiyuuName: string            // 声优名称
+  seiyuuAvatar?: string         // 声优头像
+  rooms: Room[]                 // 该声优的所有房间
+  totalSessions: number          // 会话总数
+  totalUnread: number           // 未读消息总数
+  lastMessage?: Message          // 最后一条消息
+  lastActive?: number            // 最后活跃时间
 }
 
 // 聊天设置
