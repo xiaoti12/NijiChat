@@ -13,23 +13,12 @@
         <h4>基本信息</h4>
         <div class="form-group">
           <label class="required">声优姓名</label>
-          <input
-            v-model="form.name"
-            type="text"
-            class="input"
-            placeholder="请输入声优姓名"
-            required
-          />
+          <input v-model="form.name" type="text" class="input" placeholder="请输入声优姓名" required />
         </div>
 
         <div class="form-group">
           <label>头像URL</label>
-          <input
-            v-model="form.avatar_url"
-            type="url"
-            class="input"
-            placeholder="https://example.com/avatar.jpg"
-          />
+          <input v-model="form.avatar_url" type="url" class="input" placeholder="https://example.com/avatar.jpg" />
           <div v-if="form.avatar_url" class="avatar-preview">
             <img :src="form.avatar_url" :alt="form.name" />
           </div>
@@ -39,34 +28,16 @@
           <label class="required">标签</label>
           <div class="tag-input-container">
             <div class="tag-list">
-              <span
-                v-for="(tag, index) in form.tags"
-                :key="index"
-                class="tag-item"
-              >
+              <span v-for="(tag, index) in form.tags" :key="index" class="tag-item">
                 {{ tag }}
-                <button
-                  type="button"
-                  @click="removeTag(index)"
-                  class="tag-remove"
-                >
+                <button type="button" @click="removeTag(index)" class="tag-remove">
                   ×
                 </button>
               </span>
             </div>
             <div class="tag-input-group">
-              <input
-                v-model="newTag"
-                type="text"
-                class="input tag-input"
-                placeholder="添加标签"
-                @keyup.enter="addTag"
-              />
-              <button
-                type="button"
-                @click="addTag"
-                class="btn btn-sm btn-secondary"
-              >
+              <input v-model="newTag" type="text" class="input tag-input" placeholder="添加标签" @keyup.enter="addTag" />
+              <button type="button" @click="addTag" class="btn btn-sm btn-secondary">
                 添加
               </button>
             </div>
@@ -82,18 +53,9 @@
         <div class="form-group">
           <label>萌娘百科页面名</label>
           <div class="moegirl-input-group">
-            <input
-              v-model="moegirlName"
-              type="text"
-              class="input"
-              placeholder="请输入萌娘百科的声优页面名称"
-            />
-            <button
-              type="button"
-              @click="fetchMoegirlData"
-              class="btn btn-secondary"
-              :disabled="moegirlLoading || !moegirlName.trim()"
-            >
+            <input v-model="moegirlName" type="text" class="input" placeholder="请输入萌娘百科的声优页面名称" />
+            <button type="button" @click="fetchMoegirlData" class="btn btn-secondary"
+              :disabled="moegirlLoading || !moegirlName.trim()">
               {{ moegirlLoading ? '获取中...' : '获取数据' }}
             </button>
           </div>
@@ -103,14 +65,10 @@
           <div class="result-header">
             <div class="result-header-left">
               <h5>获取到的原始数据</h5>
-              <p class="result-info">来源：{{ moegirlData.page_title || moegirlData.page_url || '未知' }}</p>
+              <p class="result-info">你可以添加其他外部数据</p>
             </div>
-            <button
-              type="button"
-              @click="processWithAI"
-              class="btn btn-primary ai-process-btn"
-              :disabled="aiProcessing"
-            >
+            <button type="button" @click="processWithAI" class="btn btn-primary ai-process-btn"
+              :disabled="aiProcessing">
               <span class="btn-icon">🤖</span>
               {{ aiProcessing ? 'AI处理中...' : 'AI处理为Markdown' }}
             </button>
@@ -118,13 +76,8 @@
           <div class="debug-info" v-if="moegirlData">
             <small>调试信息：数据长度 {{ moegirlData.raw_text?.length || 0 }} 字符</small>
           </div>
-          <textarea
-            readonly
-            :value="moegirlData.raw_text || ''"
-            class="textarea moegirl-content"
-            rows="8"
-            :placeholder="moegirlData ? '数据加载中...' : '暂无数据'"
-          ></textarea>
+          <textarea readonly :value="moegirlData.raw_text || ''" class="textarea moegirl-content" rows="8"
+            :placeholder="moegirlData ? '数据加载中...' : '暂无数据'"></textarea>
         </div>
       </div>
 
@@ -137,13 +90,8 @@
 
         <div class="form-group">
           <label class="required">资料内容</label>
-          <textarea
-            v-model="form.profile_markdown"
-            class="textarea profile-textarea"
-            placeholder="请输入声优的详细资料，支持Markdown格式..."
-            rows="20"
-            required
-          ></textarea>
+          <textarea v-model="form.profile_markdown" class="textarea profile-textarea"
+            placeholder="请输入声优的详细资料，支持Markdown格式..." rows="20" required></textarea>
           <div class="textarea-help">
             <p>支持Markdown语法：</p>
             <ul>
@@ -172,19 +120,10 @@
 
     <!-- 操作按钮 -->
     <div class="form-footer">
-      <button
-        type="button"
-        @click="$emit('cancel')"
-        class="btn btn-secondary"
-      >
+      <button type="button" @click="$emit('cancel')" class="btn btn-secondary">
         取消
       </button>
-      <button
-        type="button"
-        @click="handleSave"
-        class="btn btn-primary"
-        :disabled="saving || !isFormValid"
-      >
+      <button type="button" @click="handleSave" class="btn btn-primary" :disabled="saving || !isFormValid">
         {{ saving ? '保存中...' : '保存' }}
       </button>
     </div>
