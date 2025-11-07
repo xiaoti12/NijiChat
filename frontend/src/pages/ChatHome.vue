@@ -14,6 +14,7 @@
       :room="currentRoom"
       :messages="currentMessages"
       :seiyuu="currentSeiyuu"
+      :use-real-AI="useRealAI"
       @send-message="handleSendMessage"
     />
 
@@ -86,7 +87,9 @@ import { useRouter, useRoute } from 'vue-router'
 import { useChatStore } from '@/stores/chatStore'
 import { useSeiyuuStore } from '@/stores/seiyuuStore'
 import { useAIModelStore } from '@/stores/aiModelStore'
+import { useConfigStore } from '@/stores/configStore'
 import { mockService } from '@/services/mockService'
+import { aiService } from '@/services/aiService'
 import type { Room, Message, Seiyuu } from '@/types'
 
 // 导入组件
@@ -100,6 +103,7 @@ const route = useRoute()
 const chatStore = useChatStore()
 const seiyuuStore = useSeiyuuStore()
 const aiModelStore = useAIModelStore()
+const configStore = useConfigStore()
 
 // 状态
 const rightPanelCollapsed = ref(false)
@@ -125,6 +129,12 @@ const currentSeiyuu = computed(() => {
 const hasAIModels = computed(() => aiModelStore.models.length > 0)
 const hasChatModels = computed(() => aiModelStore.chatModels.length > 0)
 
+// 是否使用真实AI服务
+const useRealAI = computed(() => {
+  const selectedModel = configStore.config.selected_chat_model
+  return hasChatModels.value && !!selectedModel && selectedModel.trim() !== ''
+})
+
 // 事件处理
 function handleSelectConversation(roomId: string) {
   chatStore.setCurrentRoom(roomId)
@@ -148,12 +158,45 @@ async function handleSendMessage(content: string) {
       content
     })
 
-    // 生成AI回复
-    const aiReply = await mockService.generateAIReply(
-      currentSeiyuu.value.name,
-      content,
-      chatStore.getRecentMessages(currentRoom.value.id, 10)
-    )
+    let aiReply: string
+
+    // 判断是否使用真实AI服务
+    const selectedModel = configStore.config.selected_chat_model
+
+    console.log('🔍 AI服务检查:', {
+      hasChatModels: hasChatModels.value,
+      selectedModel: selectedModel,
+      useRealAI: useRealAI.value
+    })
+
+    if (useRealAI.value) {
+      try {
+        console.log('🤖 使用真实AI服务生成回复...')
+        // 使用真实AI服务
+        aiReply = await aiService.generateReply({
+          message: content,
+          seiyuu_profile: currentSeiyuu.value.profile_markdown || '',
+          conversation_history: chatStore.getRecentMessages(currentRoom.value.id, 10),
+          model_id: configStore.config.selected_chat_model
+        })
+      } catch (error) {
+        console.warn('AI服务调用失败，使用mock回复:', error)
+        // AI服务失败时降级到mock服务
+        aiReply = await mockService.generateAIReply(
+          currentSeiyuu.value.name,
+          content,
+          chatStore.getRecentMessages(currentRoom.value.id, 10)
+        )
+      }
+    } else {
+      console.log('🎭 使用演示模式生成回复...')
+      // 使用mock服务
+      aiReply = await mockService.generateAIReply(
+        currentSeiyuu.value.name,
+        content,
+        chatStore.getRecentMessages(currentRoom.value.id, 10)
+      )
+    }
 
     // 添加AI回复消息
     chatStore.addMessage({

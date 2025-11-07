@@ -16,7 +16,12 @@
 
       <div class="header-info">
         <h3 class="header-name">{{ seiyuu?.name || '未知声优' }}</h3>
-        <p class="header-status">在线 · 声优模拟对话</p>
+        <p class="header-status">
+          在线 · 声优模拟对话
+          <span class="ai-mode-indicator" :class="{ 'real-ai': useRealAI }">
+            {{ useRealAI ? '🤖 AI模式' : '🎭 演示模式' }}
+          </span>
+        </p>
       </div>
 
       <div class="header-actions">
@@ -189,6 +194,7 @@ const props = defineProps<{
   room: Room
   messages: Message[]
   seiyuu: Seiyuu | null
+  useRealAI?: boolean
 }>()
 
 // Emits
@@ -339,6 +345,23 @@ watch(
   font-size: 13px;
   color: #10b981;
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ai-mode-indicator {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #f3f4f6;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.ai-mode-indicator.real-ai {
+  background: #dbeafe;
+  color: #2563eb;
 }
 
 .header-actions {

@@ -68,7 +68,7 @@
               <span>当前模型</span>
               <span class="setting-value">{{ selectedModel?.name || '未选择' }}</span>
             </label>
-            <select v-model="selectedModelId" class="setting-select">
+            <select v-model="selectedModelId" class="setting-select" @change="handleModelChange">
               <option value="">请选择AI模型</option>
               <option
                 v-for="model in availableChatModels"
@@ -223,8 +223,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, watch } from 'vue'
 import { useAIModelStore } from '@/stores/aiModelStore'
+import { useConfigStore } from '@/stores/configStore'
 import type { Room, Seiyuu } from '@/types'
 import AIModelManager from './AIModelManager.vue'
 
@@ -243,10 +244,11 @@ const emit = defineEmits<{
 
 // Store
 const aiModelStore = useAIModelStore()
+const configStore = useConfigStore()
 
 // 状态
 const showAIManager = ref(false)
-const selectedModelId = ref<string | null>(null)
+const selectedModelId = ref<string | null>(configStore.config.selected_chat_model || null)
 
 // 设置
 const settings = reactive({
@@ -285,14 +287,33 @@ const historyItems = ref([
   }
 ])
 
+// 监听selectedModelId变化，自动更新settings
+watch(selectedModelId, (newValue) => {
+  settings.model_id = newValue
+})
+
 // 方法
 function handleToggle() {
   emit('toggle')
 }
 
+function handleModelChange() {
+  // 模型选择变化时自动保存配置
+  if (selectedModelId.value) {
+    configStore.setSelectedChatModel(selectedModelId.value)
+    console.log('✅ 已选择AI模型:', selectedModelId.value)
+  } else {
+    // 取消选择时清除配置
+    configStore.updateConfig({ selected_chat_model: null })
+    console.log('⚠️ 未选择AI模型，已清除配置')
+  }
+}
+
 function handleApplySettings() {
+  // 更新模型ID到设置对象
+  settings.model_id = selectedModelId.value
+
   emit('updateSettings', { ...settings })
-  // 显示应用成功提示
   console.log('设置已应用:', settings)
 }
 
