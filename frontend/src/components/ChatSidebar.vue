@@ -1,15 +1,26 @@
 <template>
-  <div class="chat-sidebar">
+  <div :class="['chat-sidebar', { collapsed: props.collapsed }]">
     <!-- 侧边栏头部 -->
     <div class="sidebar-header">
-      <h1 class="app-title">NijiChat</h1>
-      <p class="app-subtitle">与你的虚拟声优对话</p>
+      <div v-if="!props.collapsed" class="header-content">
+        <h1 class="app-title">NijiChat</h1>
+        <p class="app-subtitle">与你的虚拟声优对话</p>
+      </div>
+      <div v-else class="header-collapsed">
+        <div class="app-icon">N</div>
+      </div>
       <!-- 动画波浪背景 -->
       <div class="wave-background"></div>
+      <!-- 收起/展开按钮 -->
+      <button class="toggle-btn" @click="handleToggle" :title="props.collapsed ? '展开侧边栏' : '收起侧边栏'">
+        <svg :class="{ rotated: props.collapsed }" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+        </svg>
+      </button>
     </div>
 
     <!-- 搜索和新建 -->
-    <div class="sidebar-controls">
+    <div v-if="!props.collapsed" class="sidebar-controls">
       <div class="search-box">
         <svg class="search-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
           <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
@@ -34,23 +45,32 @@
         </svg>
       </button>
     </div>
+    <!-- 收起状态下的新建按钮 -->
+    <div v-else class="collapsed-controls">
+      <button @click="handleNewConversation" class="new-conversation-btn-collapsed" title="开始新对话">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
+        </svg>
+      </button>
+    </div>
 
     <!-- 对话列表 -->
     <div class="conversations-container">
       <!-- 1v1 对话分组 -->
       <div v-if="filteredConversations.length > 0" class="conversation-section">
-        <div class="section-header">
+        <div v-if="!props.collapsed" class="section-header">
           <h3 class="section-title">对话</h3>
           <span class="section-count">{{ filteredConversations.length }}</span>
         </div>
 
-        <div class="conversation-list">
+        <div :class="['conversation-list', { collapsed: props.collapsed }]">
           <div
             v-for="conversation in filteredConversations"
             :key="conversation.id"
             :class="[
               'conversation-item',
-              { active: conversation.id === currentRoomId }
+              { active: conversation.id === currentRoomId },
+              { collapsed: props.collapsed }
             ]"
             @click="handleSelectConversation(conversation.id)"
           >
@@ -64,18 +84,26 @@
               <div v-else class="avatar-placeholder">
                 {{ conversation.seiyuu?.name?.charAt(0) || '?' }}
               </div>
+              <!-- 未读徽章 -->
+              <span v-if="conversation.unread > 0" class="conversation-badge">
+                {{ conversation.unread > 99 ? '99+' : conversation.unread }}
+              </span>
             </div>
 
-            <div class="conversation-content">
+            <div v-if="!props.collapsed" class="conversation-content">
               <div class="conversation-header">
                 <h4 class="conversation-name">{{ conversation.seiyuu?.name || '未知声优' }}</h4>
                 <span class="conversation-time">{{ formatTime(conversation.timestamp) }}</span>
               </div>
               <div class="conversation-preview">
                 <p class="last-message">{{ conversation.lastMessage }}</p>
-                <span v-if="conversation.unread > 0" class="conversation-badge">
-                  {{ conversation.unread > 99 ? '99+' : conversation.unread }}
-                </span>
+              </div>
+            </div>
+            <!-- 收起状态下的悬浮提示 -->
+            <div v-else class="conversation-tooltip">
+              <div class="tooltip-content">
+                <div class="tooltip-name">{{ conversation.seiyuu?.name || '未知声优' }}</div>
+                <div class="tooltip-preview">{{ conversation.lastMessage }}</div>
               </div>
             </div>
           </div>
@@ -109,12 +137,14 @@ import type { Conversation } from '@/types'
 const props = defineProps<{
   conversations: Conversation[]
   currentRoomId: string | null
+  collapsed?: boolean
 }>()
 
 // Emits
 const emit = defineEmits<{
   selectConversation: [roomId: string]
   newConversation: []
+  toggle: []
 }>()
 
 // 路由
@@ -160,6 +190,10 @@ function goToAdmin() {
   router.push({ name: 'Admin' })
 }
 
+function handleToggle() {
+  emit('toggle')
+}
+
 function formatTime(timestamp: string): string {
   const date = new Date(timestamp)
   const now = new Date()
@@ -189,6 +223,11 @@ function formatTime(timestamp: string): string {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  transition: width 0.3s ease;
+}
+
+.chat-sidebar.collapsed {
+  width: 80px;
 }
 
 /* 侧边栏头部 */
@@ -199,6 +238,34 @@ function formatTime(timestamp: string): string {
   color: white;
   position: relative;
   overflow: hidden;
+  transition: padding 0.3s ease;
+}
+
+.chat-sidebar.collapsed .sidebar-header {
+  padding: 15px 8px;
+}
+
+.header-content {
+  position: relative;
+  z-index: 1;
+}
+
+.header-collapsed {
+  position: relative;
+  z-index: 1;
+}
+
+.app-icon {
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0 auto;
 }
 
 .wave-background {
@@ -230,6 +297,133 @@ function formatTime(timestamp: string): string {
   margin: 0;
   position: relative;
   z-index: 1;
+}
+
+/* Toggle按钮 */
+.toggle-btn {
+  position: absolute;
+  top: 50%;
+  right: -16px;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 2px solid #e5e7eb;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow:
+    0 4px 8px rgba(0, 0, 0, 0.12),
+    0 2px 4px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  z-index: 10;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.chat-sidebar.collapsed .toggle-btn {
+  right: -12px;
+  width: 28px;
+  height: 28px;
+  top: 20px;
+  transform: translateY(0);
+}
+
+.toggle-btn:hover {
+  background: linear-gradient(135deg, #fead00 0%, #ff791b 100%);
+  border-color: #fead00;
+  color: white;
+  transform: translateY(-50%) scale(1.15);
+  box-shadow:
+    0 6px 12px rgba(254, 173, 0, 0.25),
+    0 3px 6px rgba(254, 173, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.toggle-btn:active {
+  transform: translateY(-50%) scale(1.05);
+  transition: all 0.1s ease;
+}
+
+.toggle-btn svg {
+  width: 14px;
+  height: 14px;
+  transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.1));
+}
+
+.toggle-btn svg.rotated {
+  transform: rotate(180deg);
+}
+
+.toggle-btn:hover svg {
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.2));
+  transform: translateX(1px);
+}
+
+.toggle-btn:hover svg.rotated {
+  transform: translateX(1px) rotate(180deg);
+}
+
+/* 呼吸灯效果 */
+.toggle-btn::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border-radius: 50%;
+  background: inherit;
+  opacity: 0;
+  z-index: -1;
+  transition: opacity 0.4s ease;
+}
+
+.toggle-btn:hover::before {
+  opacity: 0.1;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.05;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.1;
+  }
+}
+
+/* 涟漪效果 */
+.toggle-btn::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(254, 173, 0, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s ease, height 0.6s ease, opacity 0.6s ease;
+  opacity: 0;
+}
+
+.toggle-btn:active::after {
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: width 0.6s ease, height 0.6s ease, opacity 0.3s ease;
 }
 
 /* 搜索和控制区 */
@@ -353,6 +547,10 @@ function formatTime(timestamp: string): string {
   padding: 0 8px;
 }
 
+.conversation-list.collapsed {
+  padding: 0 4px;
+}
+
 .conversation-item {
   display: flex;
   align-items: center;
@@ -362,6 +560,15 @@ function formatTime(timestamp: string): string {
   border-radius: 0 20px 20px 0;
   margin-bottom: 2px;
   margin-right: 8px;
+  position: relative;
+}
+
+.conversation-item.collapsed {
+  padding: 8px;
+  margin-right: 0;
+  border-radius: 12px;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .conversation-item:hover {
@@ -379,6 +586,11 @@ function formatTime(timestamp: string): string {
 .conversation-avatar {
   margin-right: 12px;
   flex-shrink: 0;
+  position: relative;
+}
+
+.conversation-item.collapsed .conversation-avatar {
+  margin-right: 0;
 }
 
 .avatar {
@@ -386,6 +598,12 @@ function formatTime(timestamp: string): string {
   height: 44px;
   border-radius: 50%;
   object-fit: cover;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+}
+
+.conversation-item.collapsed .avatar {
+  width: 36px;
+  height: 36px;
   border: 2px solid rgba(255, 255, 255, 0.9);
 }
 
@@ -400,6 +618,12 @@ function formatTime(timestamp: string): string {
   color: white;
   font-weight: 600;
   font-size: 16px;
+}
+
+.conversation-item.collapsed .avatar-placeholder {
+  width: 36px;
+  height: 36px;
+  font-size: 14px;
 }
 
 
@@ -461,6 +685,92 @@ function formatTime(timestamp: string): string {
   border-radius: 10px;
   min-width: 18px;
   text-align: center;
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  border: 2px solid white;
+}
+
+.conversation-item.collapsed .conversation-badge {
+  top: -4px;
+  right: -4px;
+  font-size: 10px;
+  padding: 1px 4px;
+  min-width: 16px;
+}
+
+/* 悬浮提示 */
+.conversation-tooltip {
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-left: 8px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease;
+  z-index: 1000;
+  min-width: 200px;
+  pointer-events: none;
+}
+
+.conversation-item:hover .conversation-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-50%) translateX(4px);
+}
+
+.tooltip-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tooltip-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 2px;
+}
+
+.tooltip-preview {
+  font-size: 12px;
+  color: #6b7280;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+/* 收起状态下的控制按钮 */
+.collapsed-controls {
+  padding: 8px 12px;
+  display: flex;
+  justify-content: center;
+}
+
+.new-conversation-btn-collapsed {
+  width: 56px;
+  height: 56px;
+  background: #fead00;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.new-conversation-btn-collapsed:hover {
+  background: #e6950d;
+  transform: scale(1.05);
 }
 
 
@@ -515,12 +825,80 @@ function formatTime(timestamp: string): string {
     border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   }
 
+  .chat-sidebar.collapsed {
+    height: 60px;
+    width: 100%;
+  }
+
   .sidebar-header {
     padding: 15px;
   }
 
+  .chat-sidebar.collapsed .sidebar-header {
+    padding: 10px 15px;
+  }
+
+  .toggle-btn {
+    width: 28px;
+    height: 28px;
+    right: -12px;
+    top: 50%;
+  }
+
+  .chat-sidebar.collapsed .toggle-btn {
+    width: 24px;
+    height: 24px;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .app-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+
+  .collapsed-controls {
+    padding: 6px 12px;
+  }
+
+  .new-conversation-btn-collapsed {
+    width: 40px;
+    height: 40px;
+  }
+
   .app-title {
     font-size: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .toggle-btn {
+    width: 26px;
+    height: 26px;
+    right: -10px;
+  }
+
+  .chat-sidebar.collapsed .toggle-btn {
+    width: 22px;
+    height: 22px;
+    right: 8px;
+  }
+
+  .app-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+  }
+
+  .collapsed-controls {
+    padding: 4px 8px;
+  }
+
+  .new-conversation-btn-collapsed {
+    width: 36px;
+    height: 36px;
   }
 }
 </style>

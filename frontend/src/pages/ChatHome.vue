@@ -1,12 +1,12 @@
 <template>
   <div class="chat-page">
     <!-- 左侧对话列表 -->
-    <ChatSidebar :conversations="conversations" :current-room-id="currentRoomId"
-      @select-conversation="handleSelectConversation" @new-conversation="handleNewConversation" />
+    <ChatSidebar :conversations="conversations" :current-room-id="currentRoomId" :collapsed="leftSidebarCollapsed"
+      @select-conversation="handleSelectConversation" @new-conversation="handleNewConversation" @toggle="toggleLeftSidebar" />
 
     <!-- 中间聊天区域 -->
-    <ChatInterface v-if="currentRoom" :room="currentRoom" :messages="currentMessages" :seiyuu="currentSeiyuu"
-      :use-real-AI="useRealAI" @send-message="handleSendMessage" />
+    <ChatInterface v-if="currentRoom" ref="chatInterfaceRef" :room="currentRoom" :messages="currentMessages" :seiyuu="currentSeiyuu"
+      :use-real-AI="useRealAI" @send-message="handleSendMessage" @toggle-settings="toggleRightPanel" />
 
     <!-- 空状态 -->
     <div v-else class="empty-state">
@@ -92,9 +92,11 @@ const aiModelStore = useAIModelStore()
 const configStore = useConfigStore()
 
 // 状态
+const leftSidebarCollapsed = ref(false)
 const rightPanelCollapsed = ref(false)
 const loading = ref(false)
 const showAIManager = ref(false)
+const chatInterfaceRef = ref()
 
 // 计算属性
 const conversations = computed(() => chatStore.conversations)
@@ -193,6 +195,11 @@ async function handleSendMessage(content: string) {
       content: aiReply
     })
 
+    // AI回复完成后停止加载状态
+    if (chatInterfaceRef.value) {
+      chatInterfaceRef.value.stopTyping()
+    }
+
   } catch (error) {
     console.error('发送消息失败:', error)
 
@@ -216,9 +223,18 @@ async function handleSendMessage(content: string) {
       sender_avatar: currentSeiyuu.value?.avatar_url,
       content: errorMessage
     })
+
+    // 错误情况下也需要停止加载状态
+    if (chatInterfaceRef.value) {
+      chatInterfaceRef.value.stopTyping()
+    }
   } finally {
     loading.value = false
   }
+}
+
+function toggleLeftSidebar() {
+  leftSidebarCollapsed.value = !leftSidebarCollapsed.value
 }
 
 function toggleRightPanel() {
