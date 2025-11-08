@@ -40,23 +40,17 @@ func main() {
 
 	// 初始化服务层
 	seiyuuService := services.NewSeiyuuService(db, cache)
-	aiService, err := services.NewAIService()
-	if err != nil {
-		log.Fatalf("Failed to initialize AI service: %v", err)
-	}
-	schedulerService := services.NewSchedulerService(seiyuuService, aiService)
 	moegirlService := services.NewMoegirlService()
-	relationshipService := services.NewRelationshipService(db, cache, seiyuuService, aiService)
+	relationshipService := services.NewRelationshipService(db, cache, seiyuuService)
 
 	// 初始化处理器层
 	seiyuuHandler := handlers.NewSeiyuuHandler(seiyuuService)
-	schedulerHandler := handlers.NewSchedulerHandler(schedulerService)
 	adminHandler := handlers.NewAdminHandler(db)
-	moegirlHandler := handlers.NewMoegirlHandler(moegirlService, aiService)
+	moegirlHandler := handlers.NewMoegirlHandler(moegirlService)
 	relationshipsHandler := handlers.NewRelationshipsHandler(relationshipService)
 
 	// 注册路由
-	setupRoutes(router, seiyuuHandler, schedulerHandler, adminHandler, moegirlHandler, relationshipsHandler)
+	setupRoutes(router, seiyuuHandler, adminHandler, moegirlHandler, relationshipsHandler)
 
 	// 使用syumai/workers启动Worker
 	workers.Serve(router)
@@ -66,7 +60,6 @@ func main() {
 func setupRoutes(
 	router *gin.Engine,
 	seiyuuHandler *handlers.SeiyuuHandler,
-	schedulerHandler *handlers.SchedulerHandler,
 	adminHandler *handlers.AdminHandler,
 	moegirlHandler *handlers.MoegirlHandler,
 	relationshipsHandler *handlers.RelationshipsHandler,
@@ -80,9 +73,6 @@ func setupRoutes(
 	// 公开接口 - 声优相关
 	api.GET("/seiyuu", seiyuuHandler.GetAllSeiyuu)
 	api.GET("/seiyuu/:id", seiyuuHandler.GetSeiyuuByID)
-
-	// 公开接口 - 智能调度器
-	api.POST("/scheduler/select", middleware.APIRateLimitMiddleware(), schedulerHandler.SelectSeiyuu)
 
 	// 管理员登录（无需认证）
 	api.POST("/admin/login", adminHandler.Login)
@@ -104,10 +94,8 @@ func setupRoutes(
 		// 萌娘百科集成
 		admin.GET("/moegirl/:name", moegirlHandler.GetRawData)
 		admin.GET("/moegirl/search", moegirlHandler.SearchSeiyuu)
-		admin.POST("/process-profile", moegirlHandler.ProcessProfile)
 
 		// 声优关系管理
-		admin.POST("/relationships/generate", relationshipsHandler.GenerateRelationship)     // AI生成关系
 		admin.POST("/relationships", relationshipsHandler.CreateRelationship)               // 创建关系
 		admin.GET("/relationships", relationshipsHandler.GetRelationship)                   // 获取特定关系或所有关系
 		admin.PUT("/relationships/:id", relationshipsHandler.UpdateRelationship)           // 更新关系

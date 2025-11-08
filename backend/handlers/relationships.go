@@ -20,41 +20,6 @@ func NewRelationshipsHandler(relationshipService *services.RelationshipService) 
 	}
 }
 
-// GenerateRelationship AI辅助生成关系描述
-// POST /api/admin/relationships/generate
-func (h *RelationshipsHandler) GenerateRelationship(c *gin.Context) {
-	ctx := c.Request.Context()
-
-	var req models.GenerateRelationshipRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.BadRequestError(c, err)
-		return
-	}
-
-	// 验证数据
-	if req.SeiyuuIdA == "" || req.SeiyuuIdB == "" {
-		utils.BadRequestError(c, models.ErrBadRequest)
-		return
-	}
-
-	if req.SeiyuuIdA == req.SeiyuuIdB {
-		utils.BadRequestError(c, models.ErrRelationshipSameSeiyuu)
-		return
-	}
-
-	// 生成关系
-	generatedRel, err := h.relationshipService.GenerateRelationship(ctx, req.SeiyuuIdA, req.SeiyuuIdB)
-	if err != nil {
-		if err == models.ErrSeiyuuNotFound {
-			utils.NotFoundError(c, err)
-			return
-		}
-		utils.InternalServerError(c, err)
-		return
-	}
-
-	utils.SuccessWithMessage(c, "关系生成成功", generatedRel)
-}
 
 // CreateRelationship 创建关系
 // POST /api/admin/relationships
