@@ -36,7 +36,7 @@ const routes: RouteRecordRaw[] = [
     name: 'DualTheater',
     component: () => import('@/pages/DualTheater.vue'),
     meta: {
-      title: '双声优剧场'
+      title: '双人剧场'
     }
   },
   {

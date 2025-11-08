@@ -14,7 +14,8 @@
       <!-- 收起/展开按钮 -->
       <button class="toggle-btn" @click="handleToggle" :title="props.collapsed ? '展开侧边栏' : '收起侧边栏'">
         <svg :class="{ rotated: props.collapsed }" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-          <path d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+          <path
+            d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z" />
         </svg>
       </button>
     </div>
@@ -23,25 +24,24 @@
     <div v-if="!props.collapsed" class="sidebar-controls">
       <div class="search-box">
         <svg class="search-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-          <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
+          <path
+            d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
         </svg>
-        <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="搜索对话..."
-          class="search-input"
-        />
+        <input v-model="searchQuery" type="text" placeholder="搜索对话..." class="search-input" />
       </div>
       <button @click="handleNewConversation" class="new-conversation-btn">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-          <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
+          <path
+            d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z" />
         </svg>
       </button>
       <!-- 管理员入口 (开发模式) -->
       <button @click="goToAdmin" class="admin-btn" v-if="isDevelopmentMode" title="管理后台">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-          <path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/>
-          <path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115l.094-.319z"/>
+          <path
+            d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z" />
+          <path
+            d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115l.094-.319z" />
         </svg>
       </button>
     </div>
@@ -49,9 +49,50 @@
     <div v-else class="collapsed-controls">
       <button @click="handleNewConversation" class="new-conversation-btn-collapsed" title="开始新对话">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-          <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
+          <path
+            d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z" />
         </svg>
       </button>
+    </div>
+
+    <!-- 功能模式选择 -->
+    <div v-if="!props.collapsed" class="mode-selection">
+      <div class="mode-header">
+        <h4 class="mode-title">功能模式</h4>
+      </div>
+      <div class="mode-buttons">
+        <button @click="handleModeSelection('chat')" :class="['mode-btn', { active: currentMode === 'chat' }]"
+          title="1v1声优对话">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path
+              d="M14 1a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H4.414A2 2 0 0 0 3 11.586l-2 2V2a1 1 0 0 1 1-1h12zM2 0a2 2 0 0 0-2 2v12.793a.5.5 0 0 0 .854.353l2.853-2.853A1 1 0 0 1 4.414 12H14a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z" />
+            <path
+              d="M3 3.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zM3 6a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9A.5.5 0 0 1 3 6zm0 2.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5z" />
+          </svg>
+          <span class="mode-label">普通对话</span>
+        </button>
+
+        <button @click="handleModeSelection('dual')" :class="['mode-btn', { active: currentMode === 'dual' }]"
+          title="双人剧场对话">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path
+              d="M6 12.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5ZM3 8.062C3 6.76 4.235 5.765 5.53 5.886a26.58 26.58 0 0 0 4.94 0C11.765 5.765 13 6.76 13 8.062v1.157a.933.933 0 0 1-.765.935c-.845.147-2.34.346-4.235.346-1.895 0-3.39-.2-4.235-.346A.933.933 0 0 1 3 9.219V8.062Zm4.542-.827a.25.25 0 0 0-.217.068l-.92.9a24.767 24.767 0 0 1-1.871-.183.25.25 0 0 0-.068.495c.55.076 1.232.149 2.02.193a.25.25 0 0 0 .189-.071l.754-.736.847 1.71a.25.25 0 0 0 .404.062l.932-.97a25.286 25.286 0 0 0 1.922-.188.25.25 0 0 0-.068-.495c-.538.074-1.207.145-1.98.189a.25.25 0 0 0-.166.077l-.734.764-.617-1.44Z" />
+            <path d="M8.5 4.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0Z" />
+          </svg>
+          <span class="mode-label">双人剧场</span>
+        </button>
+
+        <button @click="handleModeSelection('group')" :class="['mode-btn', { active: currentMode === 'group' }]"
+          title="群组剧场对话">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1H7zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />
+            <path fillRule="evenodd"
+              d="M5.216 14A2.238 2.238 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.325 6.325 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1h4.216z" />
+            <path d="M4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z" />
+          </svg>
+          <span class="mode-label">群组剧场</span>
+        </button>
+      </div>
     </div>
 
     <!-- 对话列表 -->
@@ -64,23 +105,13 @@
         </div>
 
         <div :class="['conversation-list', { collapsed: props.collapsed }]">
-          <div
-            v-for="group in filteredSeiyuuGroups"
-            :key="group.seiyuuId"
-            :class="[
-              'conversation-item',
-              { active: group.seiyuuId === props.currentSeiyuuId },
-              { collapsed: props.collapsed }
-            ]"
-            @click="handleSelectSeiyuu(group.seiyuuId)"
-          >
+          <div v-for="group in filteredSeiyuuGroups" :key="group.seiyuuId" :class="[
+            'conversation-item',
+            { active: group.seiyuuId === props.currentSeiyuuId },
+            { collapsed: props.collapsed }
+          ]" @click="handleSelectSeiyuu(group.seiyuuId)">
             <div class="conversation-avatar">
-              <img
-                v-if="group.seiyuuAvatar"
-                :src="group.seiyuuAvatar"
-                :alt="group.seiyuuName"
-                class="avatar"
-              />
+              <img v-if="group.seiyuuAvatar" :src="group.seiyuuAvatar" :alt="group.seiyuuName" class="avatar" />
               <div v-else class="avatar-placeholder">
                 {{ group.seiyuuName.charAt(0) || '?' }}
               </div>
@@ -139,7 +170,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import type { Conversation, SeiyuuConversationGroup } from '@/types'
+import type { Conversation, SeiyuuConversationGroup, DualTheater, GroupTheater } from '@/types'
 
 // Props
 const props = defineProps<{
@@ -163,6 +194,7 @@ const router = useRouter()
 
 // 状态
 const searchQuery = ref('')
+const currentMode = ref('chat') // 当前选中的模式：chat, dual, group
 
 // 开发模式检测
 const isDevelopmentMode = computed(() => {
@@ -206,6 +238,25 @@ function goToAdmin() {
 
 function handleToggle() {
   emit('toggle')
+}
+
+function handleModeSelection(mode: string) {
+  currentMode.value = mode
+
+  switch (mode) {
+    case 'chat':
+      // 普通对话模式，跳转到声优库选择
+      handleNewConversation()
+      break
+    case 'dual':
+      // 双声优剧场模式
+      router.push({ name: 'DualTheater' })
+      break
+    case 'group':
+      // 群组剧场模式
+      router.push({ name: 'GroupTheater' })
+      break
+  }
 }
 
 function formatTime(timestamp: string): string {
@@ -293,8 +344,13 @@ function formatTime(timestamp: string): string {
 }
 
 @keyframes wave {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(100px); }
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(100px);
+  }
 }
 
 .app-title {
@@ -408,10 +464,12 @@ function formatTime(timestamp: string): string {
     transform: scale(1);
     opacity: 0.1;
   }
+
   50% {
     transform: scale(1.1);
     opacity: 0.05;
   }
+
   100% {
     transform: scale(1);
     opacity: 0.1;
@@ -591,8 +649,8 @@ function formatTime(timestamp: string): string {
 
 .conversation-item.active {
   background: linear-gradient(90deg,
-    rgba(254, 173, 0, 0.1) 0%,
-    rgba(254, 173, 0, 0.05) 100%);
+      rgba(254, 173, 0, 0.1) 0%,
+      rgba(254, 173, 0, 0.05) 100%);
   border-right: 3px solid #fead00;
 }
 
@@ -809,6 +867,75 @@ function formatTime(timestamp: string): string {
   font-weight: 500;
 }
 
+/* 功能模式选择 */
+.mode-selection {
+  padding: 12px 16px;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.mode-header {
+  margin-bottom: 8px;
+}
+
+.mode-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #4b5563;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.mode-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mode-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  width: 100%;
+}
+
+.mode-btn:hover {
+  background: rgba(254, 173, 0, 0.05);
+  color: #374151;
+  border-color: rgba(254, 173, 0, 0.2);
+}
+
+.mode-btn.active {
+  background: rgba(254, 173, 0, 0.1);
+  color: #fead00;
+  border-color: rgba(254, 173, 0, 0.3);
+  font-weight: 600;
+}
+
+.mode-btn.active svg {
+  color: #fead00;
+}
+
+.mode-btn svg {
+  flex-shrink: 0;
+  transition: color 0.2s ease;
+}
+
+.mode-label {
+  white-space: nowrap;
+}
+
 /* 收起状态下的控制按钮 */
 .collapsed-controls {
   padding: 8px 12px;
@@ -890,6 +1017,28 @@ function formatTime(timestamp: string): string {
   .chat-sidebar.collapsed {
     height: 60px;
     width: 100%;
+  }
+
+  .mode-selection {
+    padding: 8px 12px;
+  }
+
+  .mode-buttons {
+    flex-direction: row;
+    gap: 6px;
+    overflow-x: auto;
+  }
+
+  .mode-btn {
+    flex-shrink: 0;
+    min-width: 90px;
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+
+  .mode-btn svg {
+    width: 14px;
+    height: 14px;
   }
 
   .sidebar-header {

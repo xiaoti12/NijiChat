@@ -2,7 +2,7 @@
   <div class="dual-theater">
     <div class="theater-header">
       <div class="theater-title">
-        <h1>双声优剧场</h1>
+        <h1>双人剧场</h1>
         <p v-if="!selectedSeiyuu1 || !selectedSeiyuu2">选择两位声优开始对话</p>
         <p v-else class="theater-subtitle">
           {{ selectedSeiyuu1.name }} × {{ selectedSeiyuu2.name }}
@@ -21,20 +21,12 @@
           <div class="seiyuu-selector">
             <h3>选择声优 A</h3>
             <div class="selected-seiyuu" v-if="selectedSeiyuu1">
-              <img
-                v-if="selectedSeiyuu1.avatar_url"
-                :src="selectedSeiyuu1.avatar_url"
-                :alt="selectedSeiyuu1.name"
-                class="seiyuu-avatar"
-              />
+              <img v-if="selectedSeiyuu1.avatar_url" :src="selectedSeiyuu1.avatar_url" :alt="selectedSeiyuu1.name"
+                class="seiyuu-avatar" />
               <div class="seiyuu-info">
                 <div class="seiyuu-name">{{ selectedSeiyuu1.name }}</div>
                 <div class="seiyuu-tags">
-                  <span
-                    v-for="tag in selectedSeiyuu1.tags"
-                    :key="tag"
-                    class="tag"
-                  >
+                  <span v-for="tag in selectedSeiyuu1.tags" :key="tag" class="tag">
                     {{ tag }}
                   </span>
                 </div>
@@ -75,20 +67,12 @@
           <div class="seiyuu-selector">
             <h3>选择声优 B</h3>
             <div class="selected-seiyuu" v-if="selectedSeiyuu2">
-              <img
-                v-if="selectedSeiyuu2.avatar_url"
-                :src="selectedSeiyuu2.avatar_url"
-                :alt="selectedSeiyuu2.name"
-                class="seiyuu-avatar"
-              />
+              <img v-if="selectedSeiyuu2.avatar_url" :src="selectedSeiyuu2.avatar_url" :alt="selectedSeiyuu2.name"
+                class="seiyuu-avatar" />
               <div class="seiyuu-info">
                 <div class="seiyuu-name">{{ selectedSeiyuu2.name }}</div>
                 <div class="seiyuu-tags">
-                  <span
-                    v-for="tag in selectedSeiyuu2.tags"
-                    :key="tag"
-                    class="tag"
-                  >
+                  <span v-for="tag in selectedSeiyuu2.tags" :key="tag" class="tag">
                     {{ tag }}
                   </span>
                 </div>
@@ -98,10 +82,7 @@
               </button>
             </div>
             <div v-else class="seiyuu-picker">
-              <SeiyuuPicker
-                :excludeIds="selectedSeiyuu1 ? [selectedSeiyuu1.id] : []"
-                @select="onSelectSeiyuu2"
-              />
+              <SeiyuuPicker :excludeIds="selectedSeiyuu1 ? [selectedSeiyuu1.id] : []" @select="onSelectSeiyuu2" />
             </div>
           </div>
         </div>
@@ -110,18 +91,9 @@
         <div v-if="selectedSeiyuu1 && selectedSeiyuu2" class="topic-section">
           <div class="topic-input">
             <label class="topic-label">对话话题（可选）</label>
-            <input
-              v-model="currentTopic"
-              type="text"
-              placeholder="例如：聊聊最近的工作、讨论一部动漫作品等..."
-              class="input topic-field"
-            />
+            <input v-model="currentTopic" type="text" placeholder="例如：聊聊最近的工作、讨论一部动漫作品等..." class="input topic-field" />
           </div>
-          <button
-            @click="startTheater"
-            :disabled="!canStartTheater"
-            class="btn btn-primary start-btn"
-          >
+          <button @click="startTheater" :disabled="!canStartTheater" class="btn btn-primary start-btn">
             开始对话
           </button>
         </div>
@@ -149,23 +121,14 @@
       <!-- 对话显示区 -->
       <div class="chat-container">
         <div class="chat-messages" ref="messagesContainer">
-          <div
-            v-for="message in messages"
-            :key="message.id"
-            class="message-wrapper"
-            :class="{
-              'message-seiyuu1': message.sender_id === selectedSeiyuu1?.id,
-              'message-seiyuu2': message.sender_id === selectedSeiyuu2?.id
-            }"
-          >
+          <div v-for="message in messages" :key="message.id" class="message-wrapper" :class="{
+            'message-seiyuu1': message.sender_id === selectedSeiyuu1?.id,
+            'message-seiyuu2': message.sender_id === selectedSeiyuu2?.id
+          }">
             <div class="message-content">
               <div class="message-header">
-                <img
-                  v-if="getSpeakerAvatar(message.sender_id)"
-                  :src="getSpeakerAvatar(message.sender_id)"
-                  :alt="message.sender_name"
-                  class="message-avatar"
-                />
+                <img v-if="getSpeakerAvatar(message.sender_id)" :src="getSpeakerAvatar(message.sender_id)"
+                  :alt="message.sender_name" class="message-avatar" />
                 <span class="message-name">{{ message.sender_name }}</span>
                 <span class="message-time">{{ formatTime(message.timestamp) }}</span>
               </div>
@@ -402,17 +365,24 @@ onMounted(() => {
 
 .selection-grid {
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  gap: var(--spacing-2xl);
+  grid-template-columns: minmax(300px, 1fr) minmax(380px, 500px) minmax(300px, 1fr);
+  gap: var(--spacing-md);
   max-width: 1200px;
   margin: 0 auto;
+  align-items: start;
 }
 
 .seiyuu-selector {
   background: var(--bg-primary);
   border-radius: var(--radius-xl);
   padding: var(--spacing-xl);
-  min-height: 300px;
+  min-height: 260px;
+  min-width: 280px;
+  max-width: 350px;
+  margin: 0 auto;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-direction: column;
 }
 
 .seiyuu-selector h3 {
@@ -477,12 +447,14 @@ onMounted(() => {
 .relationship-display {
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
   background: var(--bg-primary);
   border-radius: var(--radius-xl);
   padding: var(--spacing-xl);
-  min-width: 300px;
+  min-width: 380px;
+  min-height: 260px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .relationship-content,
@@ -514,6 +486,12 @@ onMounted(() => {
   border-left: 3px solid var(--color-primary);
   line-height: 1.6;
   color: var(--text-primary);
+  height: 180px;
+  overflow-y: auto;
+  width: 100%;
+  margin: 0;
+  box-sizing: border-box;
+  flex: 1;
 }
 
 .relationship-loading,
@@ -681,13 +659,22 @@ onMounted(() => {
   animation: typing 1.4s infinite ease-in-out;
 }
 
-.typing-dot:nth-child(1) { animation-delay: -0.32s; }
-.typing-dot:nth-child(2) { animation-delay: -0.16s; }
+.typing-dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.typing-dot:nth-child(2) {
+  animation-delay: -0.16s;
+}
 
 @keyframes typing {
-  0%, 80%, 100% {
+
+  0%,
+  80%,
+  100% {
     transform: scale(0);
   }
+
   40% {
     transform: scale(1);
   }
@@ -697,23 +684,94 @@ onMounted(() => {
   font-style: italic;
 }
 
+/* 关系描述滚动条美化 */
+.relationship-description::-webkit-scrollbar {
+  width: 6px;
+}
+
+.relationship-description::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 3px;
+}
+
+.relationship-description::-webkit-scrollbar-thumb {
+  background: var(--color-primary);
+  border-radius: 3px;
+  opacity: 0.7;
+}
+
+.relationship-description::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary-dark);
+  opacity: 1;
+}
+
+/* Firefox 滚动条样式 */
+.relationship-description {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-primary) rgba(0, 0, 0, 0.05);
+}
+
+@media (max-width: 1200px) {
+  .selection-grid {
+    grid-template-columns: 1.5fr minmax(280px, 1fr) 1.5fr;
+    gap: var(--spacing-lg);
+    max-width: 1200px;
+  }
+
+  .seiyuu-selector {
+    min-width: 240px;
+  }
+
+  .relationship-display {
+    min-width: 280px;
+  }
+}
+
 @media (max-width: 1024px) {
   .selection-grid {
     grid-template-columns: 1fr;
-    gap: var(--spacing-xl);
+    gap: var(--spacing-lg);
+    max-width: 600px;
   }
 
   .relationship-display {
     order: -1;
     min-width: auto;
+    max-width: 500px;
+    margin: 0 auto;
+  }
+
+  .seiyuu-selector {
+    min-width: auto;
+    max-width: 500px;
+    margin: 0 auto;
   }
 }
 
 @media (max-width: 768px) {
+  .setup-section {
+    padding: var(--spacing-lg);
+  }
+
+  .selection-grid {
+    gap: var(--spacing-md);
+  }
+
+  .seiyuu-selector,
+  .relationship-display {
+    padding: var(--spacing-lg);
+    min-height: auto;
+  }
+
+  .relationship-description {
+    max-height: 120px;
+  }
+
   .theater-header {
     flex-direction: column;
     gap: var(--spacing-md);
     text-align: center;
+    padding: var(--spacing-lg);
   }
 
   .theater-controls {
