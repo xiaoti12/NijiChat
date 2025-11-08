@@ -3,14 +3,13 @@ package middleware
 import (
 	"os"
 	"seiyuu-chat/models"
+	"seiyuu-chat/router"
 	"seiyuu-chat/utils"
-
-	"github.com/gin-gonic/gin"
 )
 
 // AdminAuthMiddleware JWT认证中间件 - 仅管理员可访问
-func AdminAuthMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
+func AdminAuthMiddleware() router.HandlerFunc {
+	return func(c *router.Context) {
 		// 开发环境跳过认证
 		if utils.IsDevelopmentMode() {
 			// 设置默认管理员信息用于开发环境
@@ -59,7 +58,7 @@ func AdminAuthMiddleware() gin.HandlerFunc {
 }
 
 // GetAdminID 从context中获取管理员ID
-func GetAdminID(c *gin.Context) string {
+func GetAdminID(c *router.Context) string {
 	if adminID, exists := c.Get("admin_id"); exists {
 		if id, ok := adminID.(string); ok {
 			return id
@@ -69,7 +68,7 @@ func GetAdminID(c *gin.Context) string {
 }
 
 // GetUsername 从context中获取用户名
-func GetUsername(c *gin.Context) string {
+func GetUsername(c *router.Context) string {
 	if username, exists := c.Get("username"); exists {
 		if name, ok := username.(string); ok {
 			return name

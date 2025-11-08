@@ -11,8 +11,7 @@
       "binding": "SEIYUU_DB",
       "database_name": "seiyuu-chat-db",
       "database_id": "your-d1-database-id",
-      "migrations_dir": "database/migrations",
-      "preview_database_id": "your-preview-d1-database-id"
+      "preview_database_id": "4d581c6d-f7e3-47ee-a8ff-1b0d2f744c8b"
     }
   ],
   // KV 命名空间绑定
@@ -20,7 +19,7 @@
     {
       "binding": "SEIYUU_KV",
       "id": "your-kv-namespace-id",
-      "preview_id": "your-preview-kv-namespace-id"
+      "preview_id": "ec390fc715c24f1b9b21b4cf41940546"
     }
   ],
   // 环境变量配置
@@ -39,6 +38,9 @@
       // 生产环境的敏感变量通过 wrangler secret put 设置
       // wrangler secret put ADMIN_JWT_SECRET --env production
       // wrangler secret put LIGHTWEIGHT_AI_API_KEY --env production
+      "build": {
+        "command": "npm run build:deploy"
+      },
       "d1_databases": [
         {
           "binding": "SEIYUU_DB",
@@ -59,46 +61,31 @@
         "ENVIRONMENT": "staging",
         "MOEGIRL_API_BASE_URL": "https://zh.moegirl.org.cn/api.php"
       },
+      "build": {
+        "command": "npm run build:deploy"
+      },
       "d1_databases": [
         {
           "binding": "SEIYUU_DB",
-          "database_name": "seiyuu-chat-db-staging",
-          "database_id": "your-staging-d1-database-id"
+          "database_name": "seiyuu-chat-db-prev",
+          "database_id": "4d581c6d-f7e3-47ee-a8ff-1b0d2f744c8b"
         }
       ],
       "kv_namespaces": [
         {
           "binding": "SEIYUU_KV",
-          "id": "your-staging-kv-namespace-id"
+          "id": "ec390fc715c24f1b9b21b4cf41940546"
         }
       ]
     }
   },
-  // 构建配置
+  // 构建配置（用于本地开发 wrangler dev）
   "build": {
-    "command": "npm run build"
+    "command": "npm run build:local"
   },
   // 观察者配置（开发模式）
   "observability": {
     "enabled": true
-  },
-  // 资源限制
-  "limits": {
-    "cpu_ms": 50
-  },
-  // 路由配置
-  "routes": [
-    {
-      "pattern": "api.nijichat.com/*",
-      "zone_name": "nijichat.com"
-    }
-  ],
-  // 触发器配置（Cron 定时任务等）
-  "triggers": {
-    "crons": [
-      // 示例: 每天凌晨2点清理过期缓存
-      // "0 2 * * *"
-    ]
   },
   // 日志配置
   "logpush": false,

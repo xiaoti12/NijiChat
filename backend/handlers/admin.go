@@ -7,9 +7,9 @@ import (
 
 	"seiyuu-chat/database"
 	"seiyuu-chat/models"
+	"seiyuu-chat/router"
 	"seiyuu-chat/utils"
 
-	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
 
@@ -27,7 +27,7 @@ func NewAdminHandler(db *database.D1Client) *AdminHandler {
 
 // Login 管理员登录
 // POST /api/admin/login
-func (h *AdminHandler) Login(c *gin.Context) {
+func (h *AdminHandler) Login(c *router.Context) {
 	ctx := c.Request.Context()
 
 	var req models.AdminLoginRequest
@@ -88,7 +88,7 @@ func (h *AdminHandler) Login(c *gin.Context) {
 
 // CreateAdmin 创建管理员账号（仅用于初始化，实际应该由超级管理员调用）
 // POST /api/admin/create
-func (h *AdminHandler) CreateAdmin(c *gin.Context) {
+func (h *AdminHandler) CreateAdmin(c *router.Context) {
 	ctx := c.Request.Context()
 
 	var req struct {
@@ -139,7 +139,7 @@ func (h *AdminHandler) CreateAdmin(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessWithMessage(c, "管理员创建成功", gin.H{
+	utils.SuccessWithMessage(c, "管理员创建成功", map[string]interface{}{
 		"id":       id,
 		"username": req.Username,
 	})
@@ -172,7 +172,7 @@ func (h *AdminHandler) getAdminByUsername(ctx context.Context, username string) 
 
 // GetProfile 获取当前管理员信息
 // GET /api/admin/profile
-func (h *AdminHandler) GetProfile(c *gin.Context) {
+func (h *AdminHandler) GetProfile(c *router.Context) {
 	// 从context中获取管理员ID（由认证中间件设置）
 	adminID := c.GetString("admin_id")
 	username := c.GetString("username")
@@ -182,7 +182,7 @@ func (h *AdminHandler) GetProfile(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, gin.H{
+	utils.SuccessResponse(c, map[string]interface{}{
 		"id":       adminID,
 		"username": username,
 	})
@@ -190,8 +190,8 @@ func (h *AdminHandler) GetProfile(c *gin.Context) {
 
 // HealthCheck 健康检查
 // GET /api/health
-func (h *AdminHandler) HealthCheck(c *gin.Context) {
-	utils.SuccessResponse(c, gin.H{
+func (h *AdminHandler) HealthCheck(c *router.Context) {
+	utils.SuccessResponse(c, map[string]interface{}{
 		"status":  "ok",
 		"service": "seiyuu-chat-backend",
 		"version": "1.0.0",

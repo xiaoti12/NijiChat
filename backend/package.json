@@ -4,10 +4,12 @@
     "description": "NijiChat 后端 - 基于Golang的Cloudflare Workers服务",
     "private": true,
     "scripts": {
-        "build": "go run github.com/syumai/workers/cmd/workers-assets-gen -mode=go && GOOS=js GOARCH=wasm go build -o ./build/app.wasm .",
+        "build:local": "go run github.com/syumai/workers/cmd/workers-assets-gen -mode=go && GOOS=js GOARCH=wasm go build -o ./build/app.wasm .",
+        "build:deploy": "go run github.com/syumai/workers/cmd/workers-assets-gen && tinygo build -o ./build/app.wasm -target wasm -no-debug ./...",
         "dev": "wrangler dev",
         "start": "wrangler dev",
-        "deploy": "wrangler deploy"
+        "deploy": "wrangler deploy --env production",
+        "deploy:staging": "wrangler deploy --env staging"
     },
     "keywords": [
         "golang",

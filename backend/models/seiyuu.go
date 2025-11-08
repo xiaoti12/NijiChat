@@ -19,7 +19,7 @@ type Seiyuu struct {
 	Name            string       `json:"name"`              // 声优姓名
 	AvatarURL       string       `json:"avatar_url"`        // 头像图片URL
 	ProfileMarkdown string       `json:"profile_markdown"`  // 完整Markdown格式资料
-	RawProfileData  string       `json:"raw_profile_data"`  // 原始资料数据（用于AI关系生成）
+	RawProfileData  string       `json:"raw_profile_data"`  // 原始资料数据
 	Tags            []string     `json:"tags"`              // 标签列表
 	Status          SeiyuuStatus `json:"status"`            // 状态
 	CreatedAt       time.Time    `json:"created_at"`        // 创建时间

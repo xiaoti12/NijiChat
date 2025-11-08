@@ -33,16 +33,6 @@ type UpdateRelationshipRequest struct {
 	RelationshipDescription *string `json:"relationship_description"`  // 关系描述
 }
 
-// GenerateRelationshipRequest AI生成关系请求
-type GenerateRelationshipRequest struct {
-	SeiyuuIdA string `json:"seiyuu_id_a" binding:"required"` // 声优A的ID
-	SeiyuuIdB string `json:"seiyuu_id_b" binding:"required"` // 声优B的ID
-}
-
-// GeneratedRelationship AI生成的关系信息
-type GeneratedRelationship struct {
-	RelationshipDescription string `json:"relationship_description"`  // 关系描述
-}
 
 // Validate 验证关系数据
 func (r *SeiyuuRelationship) Validate() error {

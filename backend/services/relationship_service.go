@@ -17,40 +17,17 @@ type RelationshipService struct {
 	db            *database.D1Client
 	cache         *database.KVClient
 	seiyuuService *SeiyuuService
-	aiService     *AIService
 }
 
 // NewRelationshipService 创建关系服务实例
-func NewRelationshipService(db *database.D1Client, cache *database.KVClient, seiyuuService *SeiyuuService, aiService *AIService) *RelationshipService {
+func NewRelationshipService(db *database.D1Client, cache *database.KVClient, seiyuuService *SeiyuuService) *RelationshipService {
 	return &RelationshipService{
 		db:            db,
 		cache:         cache,
 		seiyuuService: seiyuuService,
-		aiService:     aiService,
 	}
 }
 
-// GenerateRelationship 基于两个声优的原始资料AI生成关系
-func (s *RelationshipService) GenerateRelationship(ctx context.Context, seiyuuIdA, seiyuuIdB string) (*models.GeneratedRelationship, error) {
-	// 获取两个声优的信息
-	seiyuuA, err := s.seiyuuService.GetSeiyuuByID(ctx, seiyuuIdA)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get seiyuu A: %w", err)
-	}
-
-	seiyuuB, err := s.seiyuuService.GetSeiyuuByID(ctx, seiyuuIdB)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get seiyuu B: %w", err)
-	}
-
-	// 调用AI服务生成关系
-	generatedRel, err := s.aiService.GenerateSeiyuuRelationship(ctx, seiyuuA, seiyuuB)
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate relationship with AI: %w", err)
-	}
-
-	return generatedRel, nil
-}
 
 // CreateRelationship 创建新关系
 func (s *RelationshipService) CreateRelationship(ctx context.Context, req *models.CreateRelationshipRequest) (*models.SeiyuuRelationship, error) {

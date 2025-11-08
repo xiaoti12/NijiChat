@@ -113,10 +113,9 @@ func CacheKeyWithTimestamp(prefix string, id string) string {
 
 // 常用缓存键前缀
 const (
-	CachePrefixSeiyuu    = "seiyuu"
-	CachePrefixGroup     = "group"
-	CachePrefixScheduler = "scheduler"
-	CachePrefixMoegirl   = "moegirl"
+	CachePrefixSeiyuu  = "seiyuu"
+	CachePrefixGroup   = "group"
+	CachePrefixMoegirl = "moegirl"
 )
 
 // 默认缓存过期时间（秒）

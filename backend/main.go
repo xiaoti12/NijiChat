@@ -10,21 +10,38 @@ import (
 	"seiyuu-chat/database"
 	"seiyuu-chat/handlers"
 	"seiyuu-chat/middleware"
+	"seiyuu-chat/router"
 	"seiyuu-chat/services"
 
-	"github.com/gin-gonic/gin"
 	"github.com/syumai/workers"
 )
 
+// Recovery 恢复中间件
+func RecoveryMiddleware() router.HandlerFunc {
+	return func(c *router.Context) {
+		defer func() {
+			if err := recover(); err != nil {
+				log.Printf("Panic recovered: %v", err)
+				c.JSON(http.StatusInternalServerError, map[string]interface{}{
+					"success": false,
+					"error":   "内部服务器错误",
+				})
+				c.Abort()
+			}
+		}()
+		c.Next()
+	}
+}
+
 func main() {
-	// 创建Gin路由器
-	router := gin.New()
+	// 创建自定义路由器
+	engine := router.New()
 
 	// 添加全局中间件
-	router.Use(gin.Recovery())
-	router.Use(middleware.LoggingMiddleware())
-	router.Use(middleware.CORSMiddleware())
-	router.Use(middleware.ErrorLoggingMiddleware())
+	engine.Use(RecoveryMiddleware())
+	engine.Use(middleware.LoggingMiddleware())
+	engine.Use(middleware.CORSMiddleware())
+	engine.Use(middleware.ErrorLoggingMiddleware())
 
 	// 初始化数据库和缓存
 	db, err := database.NewD1Client("SEIYUU_DB")
@@ -40,39 +57,29 @@ func main() {
 
 	// 初始化服务层
 	seiyuuService := services.NewSeiyuuService(db, cache)
-	aiService, err := services.NewAIService()
-	if err != nil {
-		log.Fatalf("Failed to initialize AI service: %v", err)
-	}
-	schedulerService := services.NewSchedulerService(seiyuuService, aiService)
-	moegirlService := services.NewMoegirlService()
-	relationshipService := services.NewRelationshipService(db, cache, seiyuuService, aiService)
+	relationshipService := services.NewRelationshipService(db, cache, seiyuuService)
 
 	// 初始化处理器层
 	seiyuuHandler := handlers.NewSeiyuuHandler(seiyuuService)
-	schedulerHandler := handlers.NewSchedulerHandler(schedulerService)
 	adminHandler := handlers.NewAdminHandler(db)
-	moegirlHandler := handlers.NewMoegirlHandler(moegirlService, aiService)
 	relationshipsHandler := handlers.NewRelationshipsHandler(relationshipService)
 
 	// 注册路由
-	setupRoutes(router, seiyuuHandler, schedulerHandler, adminHandler, moegirlHandler, relationshipsHandler)
+	setupRoutes(engine, seiyuuHandler, adminHandler, relationshipsHandler)
 
 	// 使用syumai/workers启动Worker
-	workers.Serve(router)
+	workers.Serve(engine)
 }
 
 // setupRoutes 设置路由
 func setupRoutes(
-	router *gin.Engine,
+	engine *router.Engine,
 	seiyuuHandler *handlers.SeiyuuHandler,
-	schedulerHandler *handlers.SchedulerHandler,
 	adminHandler *handlers.AdminHandler,
-	moegirlHandler *handlers.MoegirlHandler,
 	relationshipsHandler *handlers.RelationshipsHandler,
 ) {
 	// API版本组
-	api := router.Group("/api")
+	api := engine.Group("/api")
 
 	// 健康检查
 	api.GET("/health", adminHandler.HealthCheck)
@@ -80,9 +87,6 @@ func setupRoutes(
 	// 公开接口 - 声优相关
 	api.GET("/seiyuu", seiyuuHandler.GetAllSeiyuu)
 	api.GET("/seiyuu/:id", seiyuuHandler.GetSeiyuuByID)
-
-	// 公开接口 - 智能调度器
-	api.POST("/scheduler/select", middleware.APIRateLimitMiddleware(), schedulerHandler.SelectSeiyuu)
 
 	// 管理员登录（无需认证）
 	api.POST("/admin/login", adminHandler.Login)
@@ -102,12 +106,9 @@ func setupRoutes(
 		admin.DELETE("/seiyuu/:id", seiyuuHandler.DeleteSeiyuu)
 
 		// 萌娘百科集成
-		admin.GET("/moegirl/:name", moegirlHandler.GetRawData)
-		admin.GET("/moegirl/search", moegirlHandler.SearchSeiyuu)
-		admin.POST("/process-profile", moegirlHandler.ProcessProfile)
+		admin.GET("/seiyuu/moegirl/:name", seiyuuHandler.GetMoegirlRawData)
 
 		// 声优关系管理
-		admin.POST("/relationships/generate", relationshipsHandler.GenerateRelationship)     // AI生成关系
 		admin.POST("/relationships", relationshipsHandler.CreateRelationship)               // 创建关系
 		admin.GET("/relationships", relationshipsHandler.GetRelationship)                   // 获取特定关系或所有关系
 		admin.PUT("/relationships/:id", relationshipsHandler.UpdateRelationship)           // 更新关系
@@ -116,8 +117,8 @@ func setupRoutes(
 	}
 
 	// 404处理
-	router.NoRoute(func(c *gin.Context) {
-		c.JSON(http.StatusNotFound, gin.H{
+	engine.NoRoute(func(c *router.Context) {
+		c.JSON(http.StatusNotFound, map[string]interface{}{
 			"success": false,
 			"error":   "接口不存在",
 		})
