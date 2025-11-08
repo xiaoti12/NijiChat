@@ -352,7 +352,7 @@ async function handleSendMessageDual(content: string) {
       room_id: currentRoom.value.id,
       sender_id: nextSpeaker.id,
       sender_name: nextSpeaker.name,
-      sender_avatar: nextSpeaker.avatar_url,
+      sender_avatar: nextSpeaker.avatar,
       content: aiReply
     })
 

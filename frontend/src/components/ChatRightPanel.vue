@@ -72,9 +72,9 @@
             </div>
           </div>
 
-          <div v-if="room.dual_topic" class="dual-topic">
-            <div class="dual-label">话题</div>
-            <p class="topic-text">{{ room.dual_topic }}</p>
+          <div class="dual-topic">
+            <div class="dual-label">当前话题</div>
+            <p class="topic-text">{{ room.dual_topic || '自由聊天' }}</p>
           </div>
 
         </div>
@@ -187,13 +187,14 @@
         </div>
       </div>
 
-      <!-- 快捷操作 (仅1v1对话显示) -->
-      <div v-if="!isDualConversation" class="panel-section">
+      <!-- 快捷操作 -->
+      <div class="panel-section">
         <div class="section-header">
           <h4 class="section-title">快捷操作</h4>
         </div>
 
-        <div class="quick-actions">
+        <!-- 1v1对话快捷操作 -->
+        <div v-if="!isDualConversation" class="quick-actions">
           <button @click="handleNewSession" class="quick-action-btn">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
               <path
@@ -220,16 +221,46 @@
             删除当前会话
           </button>
         </div>
+
+        <!-- 双人对话快捷操作 -->
+        <div v-else class="quick-actions">
+          <button @click="handleNewDualSession" class="quick-action-btn">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path
+                d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z" />
+            </svg>
+            开启新对话
+          </button>
+
+          <button @click="handleRenameDualSession" class="quick-action-btn" v-if="dualSessionList.length > 0">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path
+                d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708l-3-3zm.646 6.061L9.793 2.5 3.293 9H3.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.207l6.5-6.5zm-7.468 7.468A.5.5 0 0 1 6 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.5-.5V10h-.5a.499.499 0 0 1-.175-.032l-.179.178a.5.5 0 0 0-.11.168l-2 5a.5.5 0 0 0 .65.65l5-2a.5.5 0 0 0 .168-.11l.178-.178z" />
+            </svg>
+            重命名对话
+          </button>
+
+          <button @click="handleDeleteDualSession" class="quick-action-btn danger-btn" v-if="dualSessionList.length > 0">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path
+                d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z" />
+              <path fill-rule="evenodd"
+                d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z" />
+            </svg>
+            删除当前对话
+          </button>
+        </div>
       </div>
 
-      <!-- 对话历史 (仅1v1对话显示) -->
-      <div class="panel-section" v-if="!isDualConversation && props.seiyuuGroup">
+      <!-- 对话历史 -->
+      <div class="panel-section" v-if="(!isDualConversation && props.seiyuuGroup) || (isDualConversation && dualSeiyuu)">
         <div class="section-header">
           <h4 class="section-title">会话列表</h4>
-          <span class="section-count">{{ sessionList.length }}</span>
+          <span class="section-count">{{ isDualConversation ? dualSessionList.length : sessionList.length }}</span>
         </div>
 
-        <div class="history-list">
+        <!-- 1v1对话会话列表 -->
+        <div v-if="!isDualConversation" class="history-list">
           <div v-for="session in sessionList" :key="session.id" :class="['history-item', { active: session.active }]"
             @click="handleSelectSession(session)">
             <div class="history-time">{{ session.time }}</div>
@@ -242,6 +273,22 @@
             <p>暂无其他会话</p>
           </div>
         </div>
+
+        <!-- 双人对话会话列表 -->
+        <div v-else class="history-list">
+          <div v-for="session in dualSessionList" :key="session.id" :class="['history-item', { active: session.active }]"
+            @click="handleSelectDualSession(session)">
+            <div class="history-time">{{ session.time }}</div>
+            <div class="history-session-name">{{ session.name }}</div>
+            <div class="history-topic" v-if="session.topic">{{ session.topic }}</div>
+            <div class="history-preview">{{ session.preview }}</div>
+          </div>
+
+          <div v-if="dualSessionList.length === 0" class="empty-history">
+            <div class="empty-icon">🎭</div>
+            <p>暂无其他对话</p>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -252,6 +299,57 @@
         <div class="manager-footer">
           <button @click="showAIManager = false" class="btn btn-secondary">
             关闭
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 新建双人对话弹窗 -->
+    <div v-if="showNewDualSessionDialog" class="dual-session-overlay" @click="handleCancelDualSession">
+      <div class="dual-session-container" @click.stop>
+        <div class="dual-session-header">
+          <h3 class="dual-session-title">开启新对话</h3>
+          <button @click="handleCancelDualSession" class="dual-session-close">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="dual-session-content">
+          <div v-if="dualSeiyuu" class="dual-session-seiyuu">
+            <div class="seiyuu-info">
+              <img v-if="dualSeiyuu.seiyuu1.avatar" :src="dualSeiyuu.seiyuu1.avatar" :alt="dualSeiyuu.seiyuu1.name" class="seiyuu-avatar" />
+              <div v-else class="seiyuu-avatar-placeholder">{{ dualSeiyuu.seiyuu1.name.charAt(0) }}</div>
+              <span class="seiyuu-name">{{ dualSeiyuu.seiyuu1.name }}</span>
+            </div>
+            <div class="seiyuu-connector">×</div>
+            <div class="seiyuu-info">
+              <img v-if="dualSeiyuu.seiyuu2.avatar" :src="dualSeiyuu.seiyuu2.avatar" :alt="dualSeiyuu.seiyuu2.name" class="seiyuu-avatar" />
+              <div v-else class="seiyuu-avatar-placeholder">{{ dualSeiyuu.seiyuu2.name.charAt(0) }}</div>
+              <span class="seiyuu-name">{{ dualSeiyuu.seiyuu2.name }}</span>
+            </div>
+          </div>
+
+          <div class="topic-input-section">
+            <label class="topic-label">对话主题</label>
+            <input
+              v-model="newDualTopic"
+              type="text"
+              class="topic-input"
+              placeholder="例如：聊聊最近的工作、讨论一部动漫作品等..."
+              @keyup.enter="handleCreateDualSession"
+            />
+            <p class="topic-hint">设置一个有趣的话题，让两位声优围绕这个主题开始对话</p>
+          </div>
+        </div>
+
+        <div class="dual-session-footer">
+          <button @click="handleCancelDualSession" class="btn btn-secondary">
+            取消
+          </button>
+          <button @click="handleCreateDualSession" class="btn btn-primary" :disabled="!newDualTopic.trim()">
+            创建对话
           </button>
         </div>
       </div>
@@ -292,6 +390,8 @@ const seiyuuStore = useSeiyuuStore()
 const showAIManager = ref(false)
 const isAdvancedSettingsExpanded = ref(false)
 const selectedModelId = ref<string | null>(configStore.config.selected_chat_model || null)
+const showNewDualSessionDialog = ref(false)
+const newDualTopic = ref('')
 
 // 设置
 const settings = reactive({
@@ -339,6 +439,26 @@ const sessionList = computed(() => {
     preview: room.last_message?.content || '暂无消息',
     active: props.room.id === room.id,
     session_name: room.session_name
+  }))
+})
+
+// 双人对话会话列表
+const dualSessionList = computed(() => {
+  if (!isDualConversation.value || !dualSeiyuu.value) return []
+
+  const { seiyuu1, seiyuu2 } = dualSeiyuu.value
+  const sessions = chatStore.getDualSessions(seiyuu1.id, seiyuu2.id)
+
+  return sessions.map(room => ({
+    id: room.id,
+    name: room.session_name || room.dual_topic || '双人对话',
+    topic: room.dual_topic,
+    time: new Date(room.created_at).toLocaleTimeString('zh-CN', {
+      hour: '2-digit',
+      minute: '2-digit'
+    }),
+    preview: room.last_message?.content || '暂无消息',
+    active: props.room.id === room.id
   }))
 })
 
@@ -436,6 +556,89 @@ function handleSelectSession(session: any) {
   // 切换到选中的会话
   chatStore.switchToSession(session.id)
   console.log('切换到会话:', session.name)
+}
+
+// === 双人对话相关方法 ===
+
+function handleNewDualSession() {
+  if (!dualSeiyuu.value) return
+
+  showNewDualSessionDialog.value = true
+  newDualTopic.value = ''
+}
+
+function handleCreateDualSession() {
+  if (!dualSeiyuu.value) return
+
+  const { seiyuu1, seiyuu2 } = dualSeiyuu.value
+  const topic = newDualTopic.value.trim()
+
+  if (!topic) {
+    alert('请输入对话主题')
+    return
+  }
+
+  // 创建新的双人对话会话
+  const newRoom = chatStore.createDualSession(
+    { id: seiyuu1.id, name: seiyuu1.name, avatar: seiyuu1.avatar },
+    { id: seiyuu2.id, name: seiyuu2.name, avatar: seiyuu2.avatar },
+    {
+      topic: topic,
+      initiatorId: seiyuu1.id
+    }
+  )
+
+  // 切换到新会话
+  chatStore.switchToSession(newRoom.id)
+
+  // 关闭对话框
+  showNewDualSessionDialog.value = false
+  newDualTopic.value = ''
+
+  console.log('✅ 已创建新双人对话会话:', topic)
+}
+
+function handleCancelDualSession() {
+  showNewDualSessionDialog.value = false
+  newDualTopic.value = ''
+}
+
+function handleSelectDualSession(session: any) {
+  // 切换到选中的双人对话会话
+  chatStore.switchToSession(session.id)
+  console.log('切换到双人对话:', session.name)
+}
+
+function handleRenameDualSession() {
+  if (!props.room) return
+
+  const currentName = props.room.session_name || props.room.dual_topic || '双人对话'
+  const newName = prompt('请输入新的对话名称:', currentName)
+
+  if (newName && newName.trim() && newName !== currentName) {
+    chatStore.updateSessionName(props.room.id, newName.trim())
+    console.log('✅ 双人对话已重命名为:', newName)
+  }
+}
+
+function handleDeleteDualSession() {
+  if (!props.room || !dualSeiyuu.value) return
+
+  const sessionName = props.room.session_name || props.room.dual_topic || '双人对话'
+  const confirmDelete = confirm(`确定要删除对话"${sessionName}"吗？这将清除该对话的所有聊天记录。`)
+
+  if (confirmDelete) {
+    const { seiyuu1, seiyuu2 } = dualSeiyuu.value
+    chatStore.deleteSession(props.room.id)
+
+    // 删除后，如果该声优组合还有其他会话，切换到最新的一个
+    const sessions = chatStore.getDualSessions(seiyuu1.id, seiyuu2.id)
+    if (sessions.length > 0) {
+      chatStore.switchToSession(sessions[0].id)
+    }
+
+    console.log('✅ 双人对话已删除')
+  }
 }
 </script>
 
@@ -1032,6 +1235,220 @@ function handleSelectSession(session: any) {
   background: #fafafa;
 }
 
+/* 双人对话特有样式 */
+.history-topic {
+  font-size: 11px;
+  color: #fead00;
+  font-weight: 500;
+  margin: 2px 0;
+  padding: 2px 6px;
+  background: rgba(254, 173, 0, 0.1);
+  border-radius: 4px;
+  display: inline-block;
+}
+
+/* 新建双人对话弹窗 */
+.dual-session-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 20px;
+}
+
+.dual-session-container {
+  background: white;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+}
+
+.dual-session-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.dual-session-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+}
+
+.dual-session-close {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  transition: all 0.2s;
+}
+
+.dual-session-close:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.dual-session-content {
+  padding: 24px;
+  flex: 1;
+}
+
+.dual-session-seiyuu {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+}
+
+.seiyuu-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.seiyuu-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.seiyuu-avatar-placeholder {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #fead00, #ff791b);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 18px;
+}
+
+.seiyuu-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.seiyuu-connector {
+  font-size: 18px;
+  font-weight: 600;
+  color: #9ca3af;
+}
+
+.topic-input-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.topic-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.topic-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  background: white;
+  color: #374151;
+  transition: all 0.2s;
+}
+
+.topic-input:focus {
+  outline: none;
+  border-color: #fead00;
+  box-shadow: 0 0 0 3px rgba(254, 173, 0, 0.1);
+}
+
+.topic-hint {
+  font-size: 12px;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.dual-session-footer {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding: 16px 24px;
+  border-top: 1px solid #e5e7eb;
+  background: #fafafa;
+}
+
+.btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 80px;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #fead00, #ff791b);
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(254, 173, 0, 0.4);
+}
+
+.btn-secondary {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.btn-secondary:hover {
+  background: #e5e7eb;
+  border-color: #9ca3af;
+}
+
 /* 响应式 */
 @media (max-width: 1400px) {
   .chat-right-panel {
@@ -1049,9 +1466,23 @@ function handleSelectSession(session: any) {
     display: none;
   }
 
-  .ai-manager-container {
+  .ai-manager-container,
+  .dual-session-container {
     max-width: 95%;
     max-height: 90vh;
+  }
+
+  .dual-session-content {
+    padding: 20px;
+  }
+
+  .dual-session-seiyuu {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .seiyuu-connector {
+    transform: rotate(90deg);
   }
 }
 </style>
