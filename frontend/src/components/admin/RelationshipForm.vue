@@ -124,12 +124,12 @@ const form = reactive({
 const isEdit = computed(() => !!props.relationship)
 
 const availableSeiyuuA = computed(() => {
-  return seiyuuList.value.filter(s => s.status === 'active')
+  return seiyuuList.value.filter(s => s.status === 'active' || s.status === 'pending')
 })
 
 const availableSeiyuuB = computed(() => {
   return seiyuuList.value.filter(s =>
-    s.status === 'active' && s.id !== form.seiyuu_id_a
+    (s.status === 'active' || s.status === 'pending') && s.id !== form.seiyuu_id_a
   )
 })
 
