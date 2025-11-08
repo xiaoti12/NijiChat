@@ -83,4 +83,10 @@ export interface AIModelTestResult {
   error?: string
 }
 
+// 声优资料处理结果
+export interface SeiyuuProfileProcessResult {
+  profile_markdown: string      // 处理后的Markdown格式资料
+  suggested_tags: string[]      // AI建议的标签列表
+}
+
 import { Message } from './chat'

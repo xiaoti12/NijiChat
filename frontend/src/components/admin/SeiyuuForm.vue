@@ -48,7 +48,11 @@
       <!-- 萌娘百科数据获取 -->
       <div v-if="!isEditing" class="form-section">
         <h4>萌娘百科数据</h4>
-        <p class="section-desc">可以从萌娘百科获取声优基础资料，然后通过AI处理为结构化内容</p>
+        <p class="section-desc">
+          可以从萌娘百科获取声优基础资料，然后通过AI处理为结构化内容
+          <span v-if="hasAdminAIConfig" class="ai-feature-hint">✨ AI处理已就绪</span>
+          <span v-else class="ai-feature-hint">⚠️ 请先配置管理员AI模型</span>
+        </p>
 
         <div class="form-group">
           <label>萌娘百科页面名</label>
@@ -68,7 +72,7 @@
               <p class="result-info">原始数据已保存，用于AI关系生成</p>
             </div>
             <button type="button" @click="processWithAI" class="btn btn-primary ai-process-btn"
-              :disabled="aiProcessing">
+              :disabled="aiProcessing || !hasAdminAIConfig">
               <span class="btn-icon">🤖</span>
               {{ aiProcessing ? 'AI处理中...' : 'AI处理为Markdown' }}
             </button>
@@ -159,9 +163,10 @@ import type { Seiyuu, CreateSeiyuuRequest, UpdateSeiyuuRequest } from '@/types'
 import {
   adminCreateSeiyuu,
   adminUpdateSeiyuu,
-  getMoegirlData,
-  processProfile
+  getMoegirlData
 } from '@/services/apiService'
+import { useAdminStore } from '@/stores/adminStore'
+import { aiService } from '@/services/aiService'
 
 // Props和Emits
 interface Props {
@@ -176,6 +181,9 @@ const emit = defineEmits<{
   save: [seiyuu: Seiyuu]
   cancel: []
 }>()
+
+// Store
+const adminStore = useAdminStore()
 
 // 响应式数据
 const isEditing = computed(() => !!props.seiyuu)
@@ -199,6 +207,10 @@ const saving = ref(false)
 // 计算属性
 const isFormValid = computed(() => {
   return form.name.trim() && form.profile_markdown.trim() && form.tags.length > 0
+})
+
+const hasAdminAIConfig = computed(() => {
+  return adminStore.hasAdminAIModel
 })
 
 // 监听props变化，初始化表单
@@ -261,38 +273,38 @@ async function fetchMoegirlData() {
 async function processWithAI() {
   if (!moegirlData.value) return
 
+  // 检查是否有管理员AI配置
+  if (!hasAdminAIConfig.value) {
+    alert('请先在管理员后台的"AI配置"中配置AI模型后再使用此功能')
+    return
+  }
+
   try {
     aiProcessing.value = true
-    const response = await processProfile({
-      raw_text: moegirlData.value.raw_text,
-      seiyuu_name: form.name || moegirlName.value.trim()
-    })
+    console.log('使用前端AI服务处理声优资料')
 
-    if (response.success && response.data?.success && response.data?.data) {
-      const aiData = response.data.data
+    const result = await aiService.processSeiyuuProfile(
+      moegirlData.value.raw_text,
+      form.name || moegirlName.value.trim()
+    )
 
-      // 设置AI处理后的内容
-      if (aiData.profile_markdown) {
-        form.profile_markdown = aiData.profile_markdown
-        console.log('AI处理成功，Markdown内容已更新，长度:', aiData.profile_markdown.length)
-      }
-
-      // 如果有建议的标签，添加到标签列表
-      if (aiData.suggested_tags && Array.isArray(aiData.suggested_tags)) {
-        aiData.suggested_tags.forEach(tag => {
-          if (tag && !form.tags.includes(tag)) {
-            form.tags.push(tag)
-          }
-        })
-        console.log('AI建议标签已添加:', aiData.suggested_tags)
-      }
-
-      // 用户反馈
-      console.log('AI处理完成！')
-    } else {
-      console.error('AI处理响应数据格式异常:', response)
-      alert('AI处理返回的数据格式异常，请稍后重试或联系管理员')
+    // 设置AI处理后的内容
+    if (result.profile_markdown) {
+      form.profile_markdown = result.profile_markdown
+      console.log('AI处理成功，Markdown内容已更新，长度:', result.profile_markdown.length)
     }
+
+    // 如果有建议的标签，添加到标签列表
+    if (result.suggested_tags && Array.isArray(result.suggested_tags)) {
+      result.suggested_tags.forEach(tag => {
+        if (tag && !form.tags.includes(tag)) {
+          form.tags.push(tag)
+        }
+      })
+      console.log('AI建议标签已添加:', result.suggested_tags)
+    }
+
+    console.log('AI处理完成！')
   } catch (error) {
     console.error('AI处理失败:', error)
 
@@ -303,12 +315,13 @@ async function processWithAI() {
         errorMessage = 'AI处理超时，请稍后重试'
       } else if (error.message.includes('network')) {
         errorMessage = '网络连接失败，请检查网络后重试'
+      } else if (error.message.includes('未找到可用的管理员AI配置')) {
+        errorMessage = '请先在管理员后台的"AI配置"中配置AI模型'
       } else {
         errorMessage = `AI处理失败：${error.message}`
       }
     }
 
-    // 这里可以添加用户通知组件
     alert(errorMessage)
   } finally {
     aiProcessing.value = false
@@ -593,6 +606,28 @@ async function handleSave() {
 
 .btn-icon {
   font-size: var(--font-size-sm);
+}
+
+
+.ai-feature-hint {
+  display: inline-block;
+  margin-left: var(--spacing-sm);
+  font-size: var(--font-size-xs);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.ai-feature-hint:first-of-type {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  color: #065f46;
+  border: 1px solid #34d399;
+}
+
+.ai-feature-hint:last-of-type {
+  background: linear-gradient(135deg, #fef3cd 0%, #fde68a 100%);
+  color: #92400e;
+  border: 1px solid #f59e0b;
 }
 
 .debug-info {

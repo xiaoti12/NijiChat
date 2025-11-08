@@ -59,6 +59,13 @@
           >
             关系管理
           </button>
+          <button
+            class="tab-button"
+            :class="{ active: activeTab === 'ai-config' }"
+            @click="activeTab = 'ai-config'"
+          >
+            AI配置
+          </button>
         </div>
 
         <!-- Tab 内容 -->
@@ -66,6 +73,9 @@
           <SeiyuuManager v-if="activeTab === 'seiyuu'" />
           <GroupManager v-if="activeTab === 'groups'" />
           <RelationshipManager v-if="activeTab === 'relationships'" />
+          <div v-if="activeTab === 'ai-config'" class="ai-config-container">
+            <AdminAIConfig />
+          </div>
         </div>
       </div>
 
@@ -84,6 +94,7 @@ import { adminLogin } from '@/services/apiService'
 import SeiyuuManager from '@/components/admin/SeiyuuManager.vue'
 import GroupManager from '@/components/admin/GroupManager.vue'
 import RelationshipManager from '@/components/admin/RelationshipManager.vue'
+import AdminAIConfig from '@/components/admin/AdminAIConfig.vue'
 
 const router = useRouter()
 const adminStore = useAdminStore()
@@ -241,6 +252,10 @@ function goBack() {
   background: var(--bg-primary);
   border-radius: var(--radius-xl);
   min-height: 600px;
+}
+
+.ai-config-container {
+  padding: var(--spacing-xl);
 }
 
 .admin-actions {

@@ -4,6 +4,7 @@
  */
 
 import { useAIModelStore } from '@/stores/aiModelStore'
+import { useAdminStore } from '@/stores/adminStore'
 import { useConfigStore } from '@/stores/configStore'
 import type {
   AICallOptions,
@@ -12,6 +13,7 @@ import type {
   AIModelConfig,
   GeminiConfig,
   OpenAIConfig,
+  SeiyuuProfileProcessResult,
   Message
 } from '@/types'
 
@@ -262,7 +264,7 @@ ${currentTopic ? `## 当前话题\n${currentTopic}\n` : ''}
     messages: any[],
     options: AICallOptions
   ): Promise<string> {
-    const url = `${config.api_endpoint}/v1beta/models/${config.model_name}:generateContent?key=${config.api_key}`
+    const url = `${config.api_endpoint}/models/${config.model_name}:generateContent?key=${config.api_key}`
 
     // 转换消息格式为Gemini格式
     const contents = messages
@@ -332,6 +334,140 @@ ${currentTopic ? `## 当前话题\n${currentTopic}\n` : ''}
     return data.choices[0]?.message?.content || ''
   }
 
+
+  /**
+   * 处理声优资料（管理员功能）
+   */
+  async processSeiyuuProfile(rawText: string, seiyuuName?: string, modelId?: string): Promise<SeiyuuProfileProcessResult> {
+    const adminStore = useAdminStore()
+
+    // 选择AI模型配置
+    let modelConfig: AIModelConfig | undefined
+    if (modelId) {
+      modelConfig = adminStore.getAdminAIModel(modelId)
+    } else {
+      // 使用第一个可用的管理员AI配置
+      const availableModels = adminStore.adminAIModels
+      if (availableModels.length > 0) {
+        modelConfig = availableModels[0]
+      }
+    }
+
+    if (!modelConfig) {
+      throw new Error('未找到可用的管理员AI配置，请先在管理员设置中配置AI模型')
+    }
+
+    // 构建声优资料处理提示词
+    const systemPrompt = this.buildSeiyuuProfilePrompt()
+    const userContent = `角色资料如下：\n${rawText}`
+
+    // 构建消息列表
+    const messages = [
+      {
+        role: 'system',
+        content: systemPrompt
+      },
+      {
+        role: 'user',
+        content: userContent
+      }
+    ]
+
+    // 调用AI模型
+    let response: string
+    switch (modelConfig.type) {
+      case 'gemini':
+        response = await this.callGeminiAPI(modelConfig as GeminiConfig, messages, {
+          message: userContent,
+          seiyuu_profile: '',
+          conversation_history: [],
+          temperature: 0.3, // 资料处理需要较低的温度以确保准确性
+          max_tokens: modelConfig.max_tokens
+        })
+        break
+      case 'openai':
+        response = await this.callOpenAIAPI(modelConfig as OpenAIConfig, messages, {
+          message: userContent,
+          seiyuu_profile: '',
+          conversation_history: [],
+          temperature: 0.3,
+          max_tokens: modelConfig.max_tokens
+        })
+        break
+      default:
+        throw new Error(`不支持的AI模型类型: ${modelConfig.type}`)
+    }
+
+    // 解析AI响应
+    try {
+      // 清理响应内容：去除markdown代码块包围
+      let cleanedResponse = response.trim()
+
+      // 去除 ```json 开头和 ``` 结尾
+      if (cleanedResponse.startsWith('```json')) {
+        cleanedResponse = cleanedResponse.replace(/^```json\s*/, '')
+      }
+      if (cleanedResponse.startsWith('```')) {
+        cleanedResponse = cleanedResponse.replace(/^```\s*/, '')
+      }
+      if (cleanedResponse.endsWith('```')) {
+        cleanedResponse = cleanedResponse.replace(/\s*```$/, '')
+      }
+
+      // 去除可能的其他代码块标记
+      cleanedResponse = cleanedResponse
+        .replace(/^```[\w]*\s*/, '') // 去除开头的任何代码块标记
+        .replace(/\s*```$/, '')      // 去除结尾的代码块标记
+        .trim()
+
+      console.log('原始AI响应:', response)
+      console.log('清理后的JSON:', cleanedResponse)
+
+      // 尝试解析为JSON
+      const result = JSON.parse(cleanedResponse)
+      return {
+        profile_markdown: result.profile_markdown || response,
+        suggested_tags: result.suggested_tags || []
+      }
+    } catch (error) {
+      console.warn('JSON解析失败，使用原始文本:', error)
+      // 如果解析失败，返回原始文本
+      return {
+        profile_markdown: response,
+        suggested_tags: []
+      }
+    }
+  }
+
+  /**
+   * 构建声优资料处理提示词
+   */
+  private buildSeiyuuProfilePrompt(): string {
+    return `请将以下关于声优的原始资料整理为结构化的Markdown格式。
+
+要求：
+
+总结关键信息：姓名、生日、个人爱好、人际关系、个人轶事等
+组织为清晰的Markdown格式
+保持客观真实，不添加虚构内容，不允许增加或删除信息，只能整理已有内容
+建议3-5个相关标签（例如性格、爱好等）
+【重要】不允许增加或删除信息，只能整理已有内容
+
+输出格式要求：
+- 直接返回纯JSON格式
+- 不要使用 \`\`\`json 或 \`\`\` 包围
+- 不要添加任何markdown代码块标记
+- 不要添加任何解释文字
+- 只输出JSON对象本身
+
+输出示例：
+{
+  "profile_markdown": "整理后的Markdown文本",
+  "suggested_tags": ["标签1", "标签2", "标签3"]
+}
+
+现在请处理以下声优资料：`
+  }
 
   /**
    * 测试AI模型配置
