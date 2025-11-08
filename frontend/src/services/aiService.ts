@@ -470,6 +470,101 @@ ${currentTopic ? `## 当前话题\n${currentTopic}\n` : ''}
   }
 
   /**
+   * 生成声优关系描述（管理员功能）
+   */
+  async generateSeiyuuRelationship(
+    seiyuuA: { name: string; raw_profile_data: string },
+    seiyuuB: { name: string; raw_profile_data: string },
+    modelId?: string
+  ): Promise<string> {
+    const adminStore = useAdminStore()
+
+    // 选择AI模型配置
+    let modelConfig: AIModelConfig | undefined
+    if (modelId) {
+      modelConfig = adminStore.getAdminAIModel(modelId)
+    } else {
+      // 使用第一个可用的管理员AI配置
+      const availableModels = adminStore.adminAIModels
+      if (availableModels.length > 0) {
+        modelConfig = availableModels[0]
+      }
+    }
+
+    if (!modelConfig) {
+      throw new Error('未找到可用的管理员AI配置，请先在管理员设置中配置AI模型')
+    }
+
+    // 构建关系生成提示词
+    const systemPrompt = this.buildRelationshipPrompt()
+    const userContent = `声优A： ${seiyuuA.name} 的原始资料：
+${seiyuuA.raw_profile_data}
+
+声优B： ${seiyuuB.name} 的原始资料：
+${seiyuuB.raw_profile_data}`
+
+    // 构建消息列表
+    const messages = [
+      {
+        role: 'system',
+        content: systemPrompt
+      },
+      {
+        role: 'user',
+        content: userContent
+      }
+    ]
+
+    // 调用AI模型
+    let response: string
+    switch (modelConfig.type) {
+      case 'gemini':
+        response = await this.callGeminiAPI(modelConfig as GeminiConfig, messages, {
+          message: userContent,
+          seiyuu_profile: '',
+          conversation_history: [],
+          temperature: 0.2, // 关系生成需要较低的温度以确保客观性
+          max_tokens: modelConfig.max_tokens
+        })
+        break
+      case 'openai':
+        response = await this.callOpenAIAPI(modelConfig as OpenAIConfig, messages, {
+          message: userContent,
+          seiyuu_profile: '',
+          conversation_history: [],
+          temperature: 0.2,
+          max_tokens: modelConfig.max_tokens
+        })
+        break
+      default:
+        throw new Error(`不支持的AI模型类型: ${modelConfig.type}`)
+    }
+
+    // 验证生成的内容不为空
+    const relationshipDescription = response.trim()
+    if (!relationshipDescription) {
+      return `${seiyuuA.name} 和 ${seiyuuB.name} 同为声优行业的从业者。`
+    }
+
+    return relationshipDescription
+  }
+
+  /**
+   * 构建声优关系生成提示词
+   */
+  private buildRelationshipPrompt(): string {
+    return `请根据以下两位声优的资料分析他们之间可能存在的关系。
+
+要求：
+1. 基于提供的真实资料进行分析，不要添加虚构内容
+2. 从中立的第三者视角描述关系，使用客观语言
+3. 详细说明两人的具体关系背景、共同点或互动情况
+4. 如果没有明显关系，描述他们作为同行的共同特点和专业领域
+
+请直接返回关系描述文本，不要使用任何格式标记或代码块。`
+  }
+
+  /**
    * 测试AI模型配置
    */
   async testModel(modelConfig: AIModelConfig): Promise<{ success: boolean; message: string }> {

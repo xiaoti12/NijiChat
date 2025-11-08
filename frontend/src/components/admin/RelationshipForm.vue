@@ -92,9 +92,9 @@ import type { Seiyuu, SeiyuuRelationship } from '@/types'
 import {
   adminGetAllSeiyuu,
   adminCreateRelationship,
-  adminUpdateRelationship,
-  adminGenerateRelationship
+  adminUpdateRelationship
 } from '@/services/apiService'
+import { useAIService } from '@/services/aiService'
 
 // Props
 interface Props {
@@ -156,13 +156,36 @@ async function generateRelationship() {
 
   generating.value = true
   try {
-    const response = await adminGenerateRelationship({
-      seiyuu_id_a: form.seiyuu_id_a,
-      seiyuu_id_b: form.seiyuu_id_b
-    })
+    // 从声优列表中查找对应的声优信息
+    const seiyuuA = seiyuuList.value.find(s => s.id === form.seiyuu_id_a)
+    const seiyuuB = seiyuuList.value.find(s => s.id === form.seiyuu_id_b)
 
-    if (response.success && response.data?.relationship_description) {
-      form.relationship_description = response.data.relationship_description
+    if (!seiyuuA || !seiyuuB) {
+      alert('未找到所选声优的详细信息')
+      return
+    }
+
+    // 检查是否有原始资料数据
+    if (!seiyuuA.raw_profile_data || !seiyuuB.raw_profile_data) {
+      alert('所选声优缺少原始资料数据，无法生成关系描述。请确保声优资料包含原始数据。')
+      return
+    }
+
+    // 使用前端AI服务生成关系
+    const aiService = useAIService()
+    const relationshipDescription = await aiService.generateSeiyuuRelationship(
+      {
+        name: seiyuuA.name,
+        raw_profile_data: seiyuuA.raw_profile_data
+      },
+      {
+        name: seiyuuB.name,
+        raw_profile_data: seiyuuB.raw_profile_data
+      }
+    )
+
+    if (relationshipDescription && relationshipDescription.trim()) {
+      form.relationship_description = relationshipDescription
     } else {
       alert('AI生成失败，请手动填写关系描述')
     }
