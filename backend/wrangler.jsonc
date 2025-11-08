@@ -38,6 +38,9 @@
       // 生产环境的敏感变量通过 wrangler secret put 设置
       // wrangler secret put ADMIN_JWT_SECRET --env production
       // wrangler secret put LIGHTWEIGHT_AI_API_KEY --env production
+      "build": {
+        "command": "npm run build:deploy"
+      },
       "d1_databases": [
         {
           "binding": "SEIYUU_DB",
@@ -58,6 +61,9 @@
         "ENVIRONMENT": "staging",
         "MOEGIRL_API_BASE_URL": "https://zh.moegirl.org.cn/api.php"
       },
+      "build": {
+        "command": "npm run build:deploy"
+      },
       "d1_databases": [
         {
           "binding": "SEIYUU_DB",
@@ -73,9 +79,9 @@
       ]
     }
   },
-  // 构建配置
+  // 构建配置（用于本地开发 wrangler dev）
   "build": {
-    "command": "npm run build"
+    "command": "npm run build:local"
   },
   // 观察者配置（开发模式）
   "observability": {
