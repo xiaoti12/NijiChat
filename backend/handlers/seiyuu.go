@@ -191,3 +191,30 @@ func (h *SeiyuuHandler) DeleteSeiyuu(c *gin.Context) {
 
 	utils.SuccessWithMessage(c, "声优删除成功", nil)
 }
+
+// GetMoegirlRawData 获取萌娘百科原始数据（管理员）
+// GET /api/admin/seiyuu/moegirl/:name
+func (h *SeiyuuHandler) GetMoegirlRawData(c *gin.Context) {
+	ctx := c.Request.Context()
+	name := c.Param("name")
+
+	if name == "" {
+		utils.BadRequestError(c, models.ErrBadRequest)
+		return
+	}
+
+	// 从萌娘百科获取原始数据
+	rawData, err := h.seiyuuService.GetMoegirlRawData(ctx, name)
+	if err != nil {
+		utils.InternalServerError(c, err)
+		return
+	}
+
+	// 返回响应
+	response := &models.MoegirlRawDataResponse{
+		Success: true,
+		Data:    rawData,
+	}
+
+	utils.SuccessResponse(c, response)
+}

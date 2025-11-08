@@ -40,17 +40,15 @@ func main() {
 
 	// 初始化服务层
 	seiyuuService := services.NewSeiyuuService(db, cache)
-	moegirlService := services.NewMoegirlService()
 	relationshipService := services.NewRelationshipService(db, cache, seiyuuService)
 
 	// 初始化处理器层
 	seiyuuHandler := handlers.NewSeiyuuHandler(seiyuuService)
 	adminHandler := handlers.NewAdminHandler(db)
-	moegirlHandler := handlers.NewMoegirlHandler(moegirlService)
 	relationshipsHandler := handlers.NewRelationshipsHandler(relationshipService)
 
 	// 注册路由
-	setupRoutes(router, seiyuuHandler, adminHandler, moegirlHandler, relationshipsHandler)
+	setupRoutes(router, seiyuuHandler, adminHandler, relationshipsHandler)
 
 	// 使用syumai/workers启动Worker
 	workers.Serve(router)
@@ -61,7 +59,6 @@ func setupRoutes(
 	router *gin.Engine,
 	seiyuuHandler *handlers.SeiyuuHandler,
 	adminHandler *handlers.AdminHandler,
-	moegirlHandler *handlers.MoegirlHandler,
 	relationshipsHandler *handlers.RelationshipsHandler,
 ) {
 	// API版本组
@@ -92,8 +89,7 @@ func setupRoutes(
 		admin.DELETE("/seiyuu/:id", seiyuuHandler.DeleteSeiyuu)
 
 		// 萌娘百科集成
-		admin.GET("/moegirl/:name", moegirlHandler.GetRawData)
-		admin.GET("/moegirl/search", moegirlHandler.SearchSeiyuu)
+		admin.GET("/seiyuu/moegirl/:name", seiyuuHandler.GetMoegirlRawData)
 
 		// 声优关系管理
 		admin.POST("/relationships", relationshipsHandler.CreateRelationship)               // 创建关系
