@@ -2,10 +2,9 @@ package middleware
 
 import (
 	"net/http"
+	"seiyuu-chat/router"
 	"sync"
 	"time"
-
-	"github.com/gin-gonic/gin"
 )
 
 // RateLimiter 简单的速率限制器
@@ -73,10 +72,10 @@ func (rl *RateLimiter) cleanupVisitors() {
 }
 
 // RateLimitMiddleware 速率限制中间件
-func RateLimitMiddleware(rate int) gin.HandlerFunc {
+func RateLimitMiddleware(rate int) router.HandlerFunc {
 	limiter := NewRateLimiter(rate)
 
-	return func(c *gin.Context) {
+	return func(c *router.Context) {
 		ip := c.ClientIP()
 		visitor := limiter.GetVisitor(ip)
 
@@ -85,7 +84,7 @@ func RateLimitMiddleware(rate int) gin.HandlerFunc {
 			visitor.count++
 			c.Next()
 		default:
-			c.JSON(http.StatusTooManyRequests, gin.H{
+			c.JSON(http.StatusTooManyRequests, map[string]interface{}{
 				"success": false,
 				"error":   "请求过于频繁，请稍后再试",
 			})
@@ -95,11 +94,11 @@ func RateLimitMiddleware(rate int) gin.HandlerFunc {
 }
 
 // APIRateLimitMiddleware API专用速率限制（较宽松）
-func APIRateLimitMiddleware() gin.HandlerFunc {
+func APIRateLimitMiddleware() router.HandlerFunc {
 	return RateLimitMiddleware(60) // 每分钟60次请求
 }
 
 // AdminRateLimitMiddleware 管理员API速率限制（更宽松）
-func AdminRateLimitMiddleware() gin.HandlerFunc {
+func AdminRateLimitMiddleware() router.HandlerFunc {
 	return RateLimitMiddleware(120) // 每分钟120次请求
 }

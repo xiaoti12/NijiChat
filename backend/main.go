@@ -10,21 +10,38 @@ import (
 	"seiyuu-chat/database"
 	"seiyuu-chat/handlers"
 	"seiyuu-chat/middleware"
+	"seiyuu-chat/router"
 	"seiyuu-chat/services"
 
-	"github.com/gin-gonic/gin"
 	"github.com/syumai/workers"
 )
 
+// Recovery 恢复中间件
+func RecoveryMiddleware() router.HandlerFunc {
+	return func(c *router.Context) {
+		defer func() {
+			if err := recover(); err != nil {
+				log.Printf("Panic recovered: %v", err)
+				c.JSON(http.StatusInternalServerError, map[string]interface{}{
+					"success": false,
+					"error":   "内部服务器错误",
+				})
+				c.Abort()
+			}
+		}()
+		c.Next()
+	}
+}
+
 func main() {
-	// 创建Gin路由器
-	router := gin.New()
+	// 创建自定义路由器
+	engine := router.New()
 
 	// 添加全局中间件
-	router.Use(gin.Recovery())
-	router.Use(middleware.LoggingMiddleware())
-	router.Use(middleware.CORSMiddleware())
-	router.Use(middleware.ErrorLoggingMiddleware())
+	engine.Use(RecoveryMiddleware())
+	engine.Use(middleware.LoggingMiddleware())
+	engine.Use(middleware.CORSMiddleware())
+	engine.Use(middleware.ErrorLoggingMiddleware())
 
 	// 初始化数据库和缓存
 	db, err := database.NewD1Client("SEIYUU_DB")
@@ -48,21 +65,21 @@ func main() {
 	relationshipsHandler := handlers.NewRelationshipsHandler(relationshipService)
 
 	// 注册路由
-	setupRoutes(router, seiyuuHandler, adminHandler, relationshipsHandler)
+	setupRoutes(engine, seiyuuHandler, adminHandler, relationshipsHandler)
 
 	// 使用syumai/workers启动Worker
-	workers.Serve(router)
+	workers.Serve(engine)
 }
 
 // setupRoutes 设置路由
 func setupRoutes(
-	router *gin.Engine,
+	engine *router.Engine,
 	seiyuuHandler *handlers.SeiyuuHandler,
 	adminHandler *handlers.AdminHandler,
 	relationshipsHandler *handlers.RelationshipsHandler,
 ) {
 	// API版本组
-	api := router.Group("/api")
+	api := engine.Group("/api")
 
 	// 健康检查
 	api.GET("/health", adminHandler.HealthCheck)
@@ -100,8 +117,8 @@ func setupRoutes(
 	}
 
 	// 404处理
-	router.NoRoute(func(c *gin.Context) {
-		c.JSON(http.StatusNotFound, gin.H{
+	engine.NoRoute(func(c *router.Context) {
+		c.JSON(http.StatusNotFound, map[string]interface{}{
 			"success": false,
 			"error":   "接口不存在",
 		})

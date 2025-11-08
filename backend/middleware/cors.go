@@ -1,12 +1,12 @@
 package middleware
 
 import (
-	"github.com/gin-gonic/gin"
+	"seiyuu-chat/router"
 )
 
 // CORSMiddleware CORS中间件
-func CORSMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
+func CORSMiddleware() router.HandlerFunc {
+	return func(c *router.Context) {
 		// 允许所有来源（生产环境应该配置具体的域名）
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 
@@ -36,8 +36,8 @@ func CORSMiddleware() gin.HandlerFunc {
 }
 
 // ConfigurableCORSMiddleware 可配置的CORS中间件
-func ConfigurableCORSMiddleware(allowedOrigins []string) gin.HandlerFunc {
-	return func(c *gin.Context) {
+func ConfigurableCORSMiddleware(allowedOrigins []string) router.HandlerFunc {
+	return func(c *router.Context) {
 		origin := c.Request.Header.Get("Origin")
 
 		// 检查来源是否在允许列表中

@@ -2,10 +2,9 @@ package handlers
 
 import (
 	"seiyuu-chat/models"
+	"seiyuu-chat/router"
 	"seiyuu-chat/services"
 	"seiyuu-chat/utils"
-
-	"github.com/gin-gonic/gin"
 )
 
 // RelationshipsHandler 声优关系相关API处理器
@@ -23,7 +22,7 @@ func NewRelationshipsHandler(relationshipService *services.RelationshipService) 
 
 // CreateRelationship 创建关系
 // POST /api/admin/relationships
-func (h *RelationshipsHandler) CreateRelationship(c *gin.Context) {
+func (h *RelationshipsHandler) CreateRelationship(c *router.Context) {
 	ctx := c.Request.Context()
 
 	var req models.CreateRelationshipRequest
@@ -59,7 +58,7 @@ func (h *RelationshipsHandler) CreateRelationship(c *gin.Context) {
 // GetRelationship 获取特定关系或所有关系
 // GET /api/admin/relationships?seiyuu_id_a=xxx&seiyuu_id_b=xxx （获取特定关系）
 // GET /api/admin/relationships （获取所有关系）
-func (h *RelationshipsHandler) GetRelationship(c *gin.Context) {
+func (h *RelationshipsHandler) GetRelationship(c *router.Context) {
 	ctx := c.Request.Context()
 
 	// 检查是否提供了查询参数来获取特定关系
@@ -99,7 +98,7 @@ func (h *RelationshipsHandler) GetRelationship(c *gin.Context) {
 
 // UpdateRelationship 更新关系
 // PUT /api/admin/relationships/:id
-func (h *RelationshipsHandler) UpdateRelationship(c *gin.Context) {
+func (h *RelationshipsHandler) UpdateRelationship(c *router.Context) {
 	ctx := c.Request.Context()
 	id := c.Param("id")
 
@@ -130,7 +129,7 @@ func (h *RelationshipsHandler) UpdateRelationship(c *gin.Context) {
 
 // DeleteRelationship 删除关系
 // DELETE /api/admin/relationships/:id
-func (h *RelationshipsHandler) DeleteRelationship(c *gin.Context) {
+func (h *RelationshipsHandler) DeleteRelationship(c *router.Context) {
 	ctx := c.Request.Context()
 	id := c.Param("id")
 
@@ -154,7 +153,7 @@ func (h *RelationshipsHandler) DeleteRelationship(c *gin.Context) {
 
 // GetSeiyuuRelationships 获取声优的所有关系
 // GET /api/admin/seiyuu/:id/relationships
-func (h *RelationshipsHandler) GetSeiyuuRelationships(c *gin.Context) {
+func (h *RelationshipsHandler) GetSeiyuuRelationships(c *router.Context) {
 	ctx := c.Request.Context()
 	seiyuuId := c.Param("id")
 
