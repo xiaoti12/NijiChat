@@ -5,7 +5,7 @@
       <div class="header-avatar">
         <!-- 单人对话头像 -->
         <template v-if="!isDualConversation">
-          <img v-if="seiyuu?.avatar_url" :src="seiyuu.avatar_url" :alt="seiyuu.name" class="avatar" />
+          <img v-if="currentSeiyuuAvatar" :src="currentSeiyuuAvatar" :alt="seiyuu.name" class="avatar" />
           <div v-else class="avatar-placeholder">
             {{ seiyuu?.name?.charAt(0) || '?' }}
           </div>
@@ -57,7 +57,7 @@
           <!-- 单人对话欢迎消息 -->
           <template v-if="!isDualConversation">
             <div class="welcome-avatar">
-              <img v-if="seiyuu?.avatar_url" :src="seiyuu.avatar_url" :alt="seiyuu.name" class="avatar" />
+              <img v-if="currentSeiyuuAvatar" :src="currentSeiyuuAvatar" :alt="seiyuu.name" class="avatar" />
               <div v-else class="avatar-placeholder">
                 {{ seiyuu?.name?.charAt(0) || '?' }}
               </div>
@@ -103,7 +103,7 @@
           <!-- 声优消息 (左侧) 包括单人对话和双人对话的响应者 -->
           <div v-if="message.sender_id !== 'user-1' && getMessageClass(message) !== 'initiator-message'" class="message-row">
             <div class="message-avatar">
-              <img v-if="message.sender_avatar" :src="message.sender_avatar" :alt="message.sender_name"
+              <img v-if="getMessageSenderAvatar(message)" :src="getMessageSenderAvatar(message)" :alt="message.sender_name"
                 class="avatar" />
               <div v-else class="avatar-placeholder">
                 {{ message.sender_name?.charAt(0) || '?' }}
@@ -144,7 +144,7 @@
               </div>
               <!-- 双人对话发起者头像 -->
               <template v-else>
-                <img v-if="message.sender_avatar" :src="message.sender_avatar" :alt="message.sender_name"
+                <img v-if="getMessageSenderAvatar(message)" :src="getMessageSenderAvatar(message)" :alt="message.sender_name"
                   class="avatar" />
                 <div v-else class="avatar-placeholder">
                   {{ message.sender_name?.charAt(0) || '?' }}
@@ -158,7 +158,7 @@
         <div v-if="isTyping" class="typing-indicator">
           <div class="message-row">
             <div class="message-avatar">
-              <img v-if="seiyuu?.avatar_url" :src="seiyuu.avatar_url" :alt="seiyuu.name" class="avatar" />
+              <img v-if="currentSeiyuuAvatar" :src="currentSeiyuuAvatar" :alt="seiyuu.name" class="avatar" />
               <div v-else class="avatar-placeholder">
                 {{ seiyuu?.name?.charAt(0) || '?' }}
               </div>
@@ -223,6 +223,7 @@
 import { ref, computed, nextTick, watch } from 'vue'
 import type { Room, Message, Seiyuu } from '@/types'
 import { useChatStore } from '@/stores/chatStore'
+import { useSeiyuuStore } from '@/stores/seiyuuStore'
 
 // Props
 const props = defineProps<{
@@ -240,6 +241,7 @@ const emit = defineEmits<{
 
 // Store
 const chatStore = useChatStore()
+const seiyuuStore = useSeiyuuStore()
 
 // 响应式数据
 const currentMessage = ref('')
@@ -259,10 +261,40 @@ const isDualConversation = computed(() => {
   return props.room.type === 'dual_theater'
 })
 
-// 获取双人对话的声优信息
+// 获取双人对话的声优信息（动态获取最新头像）
 const dualSeiyuu = computed(() => {
   if (!isDualConversation.value) return null
-  return chatStore.getCurrentDualSeiyuu()
+  const dualInfo = chatStore.getCurrentDualSeiyuu()
+
+  if (!dualInfo) return null
+
+  // 动态获取最新头像
+  const seiyuu1Latest = seiyuuStore.getSeiyuuById(dualInfo.seiyuu1.id)
+  const seiyuu2Latest = seiyuuStore.getSeiyuuById(dualInfo.seiyuu2.id)
+
+  return {
+    ...dualInfo,
+    seiyuu1: {
+      ...dualInfo.seiyuu1,
+      avatar: seiyuu1Latest?.avatar_url || dualInfo.seiyuu1.avatar
+    },
+    seiyuu2: {
+      ...dualInfo.seiyuu2,
+      avatar: seiyuu2Latest?.avatar_url || dualInfo.seiyuu2.avatar
+    },
+    initiator: {
+      ...dualInfo.initiator,
+      avatar: dualInfo.initiator.id === dualInfo.seiyuu1.id
+        ? (seiyuu1Latest?.avatar_url || dualInfo.initiator.avatar)
+        : (seiyuu2Latest?.avatar_url || dualInfo.initiator.avatar)
+    },
+    responder: {
+      ...dualInfo.responder,
+      avatar: dualInfo.responder.id === dualInfo.seiyuu1.id
+        ? (seiyuu1Latest?.avatar_url || dualInfo.responder.avatar)
+        : (seiyuu2Latest?.avatar_url || dualInfo.responder.avatar)
+    }
+  }
 })
 
 // 头部显示名称
@@ -272,6 +304,22 @@ const headerTitle = computed(() => {
   }
   return props.seiyuu?.name || '未知声优'
 })
+
+// 动态获取声优头像
+const currentSeiyuuAvatar = computed(() => {
+  if (!props.seiyuu?.id) return props.seiyuu?.avatar_url
+  const latestSeiyuu = seiyuuStore.getSeiyuuById(props.seiyuu.id)
+  return latestSeiyuu?.avatar_url || props.seiyuu.avatar_url
+})
+
+// 动态获取消息发送者头像
+function getMessageSenderAvatar(message: Message): string | undefined {
+  if (message.sender_id === 'user-1') return undefined
+
+  // 从 seiyuuStore 获取最新头像
+  const latestSeiyuu = seiyuuStore.getSeiyuuById(message.sender_id)
+  return latestSeiyuu?.avatar_url || message.sender_avatar
+}
 
 // 方法
 function getMessageClass(message: Message) {

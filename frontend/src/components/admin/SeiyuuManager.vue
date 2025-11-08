@@ -185,7 +185,11 @@ import {
   adminDeleteSeiyuu,
   adminUpdateSeiyuu
 } from '@/services/apiService'
+import { useSeiyuuStore } from '@/stores/seiyuuStore'
 import SeiyuuForm from './SeiyuuForm.vue'
+
+// Store
+const seiyuuStore = useSeiyuuStore()
 
 // 响应式数据
 const seiyuuList = ref<Seiyuu[]>([])
@@ -229,6 +233,8 @@ async function loadSeiyuuList() {
     const response = await adminGetAllSeiyuu()
     if (response.success) {
       seiyuuList.value = response.data
+      // 同步更新 seiyuuStore
+      seiyuuStore.setSeiyuuList(response.data)
     }
   } catch (error) {
     console.error('加载声优列表失败:', error)
@@ -259,7 +265,14 @@ function closeModal() {
   editingSeiyuu.value = null
 }
 
-async function handleSave() {
+async function handleSave(updatedSeiyuu: Seiyuu) {
+  if (editingSeiyuu.value) {
+    // 编辑模式：直接更新 seiyuuStore 中的对应项
+    seiyuuStore.updateSeiyuu(updatedSeiyuu.id, updatedSeiyuu)
+  } else {
+    // 创建模式：添加新声优到 seiyuuStore
+    seiyuuStore.addSeiyuu(updatedSeiyuu)
+  }
   closeModal()
   await refreshList()
 }
@@ -270,6 +283,8 @@ async function publishSeiyuu(id: string) {
   try {
     const response = await adminUpdateSeiyuu(id, { status: 'active' })
     if (response.success) {
+      // 同步更新 seiyuuStore
+      seiyuuStore.updateSeiyuu(id, { status: 'active' })
       await refreshList()
     }
   } catch (error) {
@@ -284,6 +299,8 @@ async function toggleSeiyuuStatus(id: string, status: SeiyuuStatus) {
   try {
     const response = await adminUpdateSeiyuu(id, { status })
     if (response.success) {
+      // 同步更新 seiyuuStore
+      seiyuuStore.updateSeiyuu(id, { status })
       await refreshList()
     }
   } catch (error) {
@@ -297,6 +314,8 @@ async function deleteSeiyuu(id: string, name: string) {
   try {
     const response = await adminDeleteSeiyuu(id)
     if (response.success) {
+      // 同步更新 seiyuuStore
+      seiyuuStore.deleteSeiyuu(id)
       await refreshList()
     }
   } catch (error) {
@@ -351,7 +370,14 @@ function formatDate(dateString: string): string {
 
 // 生命周期
 onMounted(() => {
-  loadSeiyuuList()
+  // 先尝试从 seiyuuStore 加载，如果没有数据再从 API 加载
+  if (seiyuuStore.seiyuuList.length > 0) {
+    seiyuuList.value = seiyuuStore.seiyuuList
+    loading.value = false
+    console.log('✅ 从 seiyuuStore 加载声优数据')
+  } else {
+    loadSeiyuuList()
+  }
 })
 </script>
 

@@ -150,14 +150,14 @@
       </div>
 
       <!-- 双人对话分组列表 -->
-      <div v-if="props.dualGroups.length > 0" class="conversation-section">
+      <div v-if="filteredDualGroups.length > 0" class="conversation-section">
         <div v-if="!props.collapsed" class="section-header">
           <h3 class="section-title">双人对话</h3>
-          <span class="section-count">{{ props.dualGroups.length }}</span>
+          <span class="section-count">{{ filteredDualGroups.length }}</span>
         </div>
 
         <div :class="['conversation-list', { collapsed: props.collapsed }]">
-          <div v-for="group in props.dualGroups" :key="group.pairId" :class="[
+          <div v-for="group in filteredDualGroups" :key="group.pairId" :class="[
             'conversation-item',
             'dual-conversation-item',
             { active: group.rooms.some(r => r.id === props.currentRoomId) },
@@ -217,7 +217,7 @@
       </div>
 
       <!-- 空状态 -->
-      <div v-if="filteredSeiyuuGroups.length === 0 && props.dualGroups.length === 0 && !searchQuery" class="empty-conversations">
+      <div v-if="filteredSeiyuuGroups.length === 0 && filteredDualGroups.length === 0 && !searchQuery" class="empty-conversations">
         <div class="empty-icon">💭</div>
         <p class="empty-text">还没有对话呢</p>
         <button @click="handleNewConversation" class="btn btn-primary">浏览声优库</button>
@@ -236,6 +236,7 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import type { Conversation, SeiyuuConversationGroup, DualConversationGroup, DualTheater, GroupTheater } from '@/types'
+import { useSeiyuuStore } from '@/stores/seiyuuStore'
 
 // Props
 const props = defineProps<{
@@ -259,6 +260,9 @@ const emit = defineEmits<{
 // 路由
 const router = useRouter()
 
+// Store
+const seiyuuStore = useSeiyuuStore()
+
 // 状态
 const searchQuery = ref('')
 const currentMode = ref('chat') // 当前选中的模式：chat, dual, group
@@ -274,16 +278,45 @@ const dualTheaters = ref<DualTheater[]>([])
 // 群组剧场数据（从后端API获取）
 const groupTheaters = ref<GroupTheater[]>([])
 
-// 计算属性
+// 动态获取声优头像
+function getSeiyuuLatestAvatar(seiyuuId: string): string | undefined {
+  const latestSeiyuu = seiyuuStore.getSeiyuuById(seiyuuId)
+  return latestSeiyuu?.avatar_url
+}
+
+// 动态更新声优分组的头像
 const filteredSeiyuuGroups = computed(() => {
+  let groups = props.seiyuuGroups
+
+  // 更新每个分组的头像为最新头像
+  groups = groups.map(group => ({
+    ...group,
+    seiyuuAvatar: getSeiyuuLatestAvatar(group.seiyuuId) || group.seiyuuAvatar
+  }))
+
   if (!searchQuery.value) {
-    return props.seiyuuGroups
+    return groups
   }
 
   const query = searchQuery.value.toLowerCase()
-  return props.seiyuuGroups.filter(group =>
+  return groups.filter(group =>
     group.seiyuuName.toLowerCase().includes(query)
   )
+})
+
+// 动态更新双人对话分组的头像
+const filteredDualGroups = computed(() => {
+  return props.dualGroups.map(group => ({
+    ...group,
+    seiyuu1: {
+      ...group.seiyuu1,
+      avatar: getSeiyuuLatestAvatar(group.seiyuu1.id) || group.seiyuu1.avatar
+    },
+    seiyuu2: {
+      ...group.seiyuu2,
+      avatar: getSeiyuuLatestAvatar(group.seiyuu2.id) || group.seiyuu2.avatar
+    }
+  }))
 })
 
 // 方法

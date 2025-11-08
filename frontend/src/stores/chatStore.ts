@@ -261,6 +261,7 @@ export const useChatStore = defineStore('chat', () => {
   // === 分组对话（按声优） ===
   const groupedConversations = computed((): SeiyuuConversationGroup[] => {
     const groups = new Map<string, SeiyuuConversationGroup>()
+    const seiyuuStore = useSeiyuuStore()
 
     // 只处理1v1类型的房间
     const rooms1v1 = rooms.value.filter(room => room.type === '1v1')
@@ -269,10 +270,12 @@ export const useChatStore = defineStore('chat', () => {
       const seiyuuId = room.participants[0]
 
       if (!groups.has(seiyuuId)) {
+        // 从声优store获取最新的头像和名称
+        const latestSeiyuu = seiyuuStore.getSeiyuuById(seiyuuId)
         groups.set(seiyuuId, {
           seiyuuId,
-          seiyuuName: room.name,
-          seiyuuAvatar: room.avatar,
+          seiyuuName: latestSeiyuu?.name || room.name,
+          seiyuuAvatar: latestSeiyuu?.avatar_url || room.avatar,  // 使用最新头像
           rooms: [],
           totalSessions: 0,
           totalUnread: 0,
@@ -391,7 +394,7 @@ export const useChatStore = defineStore('chat', () => {
     return Array.from(groups.values()).sort((a, b) => b.lastActive - a.lastActive)
   })
 
-  // 辅助函数：从房间信息中提取声优信息
+  // 辅助函数：从房间信息中提取声优信息（总是获取最新头像）
   function getSeiyuuInfoFromRoom(room: Room, seiyuuId: string) {
     const seiyuuStore = useSeiyuuStore()
 
@@ -402,7 +405,7 @@ export const useChatStore = defineStore('chat', () => {
       return {
         id: seiyuu.id,
         name: seiyuu.name,
-        avatar: seiyuu.avatar_url
+        avatar: seiyuu.avatar_url  // 总是使用最新的头像
       }
     }
 
@@ -780,7 +783,7 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   /**
-   * 获取当前房间的声优信息 (用于双人对话)
+   * 获取当前房间的声优信息 (用于双人对话，总是返回最新头像)
    */
   function getCurrentDualSeiyuu(): { seiyuu1: any; seiyuu2: any; initiator: any; responder: any } | null {
     const room = currentRoom.value
@@ -793,21 +796,21 @@ export const useChatStore = defineStore('chat', () => {
 
     const seiyuuStore = useSeiyuuStore()
 
-    // 从声优store获取详细信息
+    // 从声优store获取详细信息，确保头像是最新的
     const seiyuu1Data = seiyuuStore.getSeiyuuById(seiyuu1Id)
     const seiyuu2Data = seiyuuStore.getSeiyuuById(seiyuu2Id)
 
     const seiyuu1 = {
       id: seiyuu1Id,
       name: seiyuu1Data?.name || '未知声优',
-      avatar: seiyuu1Data?.avatar_url,
+      avatar: seiyuu1Data?.avatar_url,  // 总是使用最新头像
       profile_markdown: seiyuu1Data?.profile_markdown || ''
     }
 
     const seiyuu2 = {
       id: seiyuu2Id,
       name: seiyuu2Data?.name || '未知声优',
-      avatar: seiyuu2Data?.avatar_url,
+      avatar: seiyuu2Data?.avatar_url,  // 总是使用最新头像
       profile_markdown: seiyuu2Data?.profile_markdown || ''
     }
 

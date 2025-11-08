@@ -79,7 +79,12 @@ function goBack() {
 }
 
 onMounted(() => {
-  loadSeiyuu()
+  // 先尝试从 seiyuuStore 加载，如果没有数据再从 API 加载
+  if (seiyuuStore.seiyuuList.length > 0) {
+    console.log('✅ 从 seiyuuStore 加载声优数据')
+  } else {
+    loadSeiyuu()
+  }
 })
 </script>
 

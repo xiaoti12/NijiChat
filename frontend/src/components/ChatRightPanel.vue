@@ -24,7 +24,7 @@
         <!-- 单人对话角色信息 -->
         <div v-if="!isDualConversation" class="seiyuu-profile">
           <div class="profile-avatar">
-            <img v-if="seiyuu?.avatar_url" :src="seiyuu.avatar_url" :alt="seiyuu.name" class="avatar" />
+            <img v-if="currentSeiyuuAvatar" :src="currentSeiyuuAvatar" :alt="seiyuu.name" class="avatar" />
             <div v-else class="avatar-placeholder">
               {{ seiyuu?.name?.charAt(0) || '?' }}
             </div>
@@ -404,6 +404,13 @@ const settings = reactive({
 // 计算属性
 const selectedModel = computed(() => {
   return selectedModelId.value ? aiModelStore.getModel(selectedModelId.value) : null
+})
+
+// 动态获取声优头像
+const currentSeiyuuAvatar = computed(() => {
+  if (!props.seiyuu?.id) return props.seiyuu?.avatar_url
+  const latestSeiyuu = seiyuuStore.getSeiyuuById(props.seiyuu.id)
+  return latestSeiyuu?.avatar_url || props.seiyuu.avatar_url
 })
 
 const availableChatModels = computed(() => {

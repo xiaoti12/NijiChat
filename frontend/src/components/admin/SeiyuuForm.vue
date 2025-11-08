@@ -173,7 +173,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-  save: []
+  save: [seiyuu: Seiyuu]
   cancel: []
 }>()
 
@@ -334,7 +334,13 @@ async function handleSave() {
 
       const response = await adminUpdateSeiyuu(props.seiyuu.id, updateData)
       if (response.success) {
-        emit('save')
+        // 构造更新后的声优数据
+        const updatedSeiyuu: Seiyuu = {
+          ...props.seiyuu,
+          ...updateData,
+          updated_at: new Date().toISOString()
+        }
+        emit('save', updatedSeiyuu)
       }
     } else {
       // 创建模式
@@ -348,7 +354,8 @@ async function handleSave() {
 
       const response = await adminCreateSeiyuu(createData)
       if (response.success) {
-        emit('save')
+        // 对于新创建的声优，使用返回的数据
+        emit('save', response.data)
       }
     }
   } catch (error) {
