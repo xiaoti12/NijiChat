@@ -1,23 +1,16 @@
 <template>
   <div class="chat-page">
     <!-- 左侧对话列表 -->
-    <ChatSidebar
-      :conversations="conversations"
-      :seiyuu-groups="seiyuuGroups"
-      :dual-groups="dualGroups"
-      :current-room-id="currentRoomId"
-      :current-seiyuu-id="currentSeiyuuId"
-      :collapsed="leftSidebarCollapsed"
-      @select-conversation="handleSelectConversation"
-      @select-seiyuu="handleSelectSeiyuu"
-      @select-dual-conversation="handleSelectDualConversation"
-      @new-conversation="handleNewConversation"
-      @toggle="toggleLeftSidebar"
-    />
+    <ChatSidebar :conversations="conversations" :seiyuu-groups="seiyuuGroups" :dual-groups="dualGroups"
+      :current-room-id="currentRoomId" :current-seiyuu-id="currentSeiyuuId" :collapsed="leftSidebarCollapsed"
+      @select-conversation="handleSelectConversation" @select-seiyuu="handleSelectSeiyuu"
+      @select-dual-conversation="handleSelectDualConversation" @new-conversation="handleNewConversation"
+      @toggle="toggleLeftSidebar" />
 
     <!-- 中间聊天区域 -->
-    <ChatInterface v-if="currentRoom" ref="chatInterfaceRef" :room="currentRoom" :messages="currentMessages" :seiyuu="currentSeiyuu"
-      :use-real-AI="useRealAI" @send-message="handleSendMessage" @toggle-settings="toggleRightPanel" />
+    <ChatInterface v-if="currentRoom" ref="chatInterfaceRef" :room="currentRoom" :messages="currentMessages"
+      :seiyuu="currentSeiyuu" :use-real-AI="useRealAI" @send-message="handleSendMessage"
+      @toggle-settings="toggleRightPanel" />
 
     <!-- 空状态 -->
     <div v-else class="empty-state">
@@ -61,15 +54,8 @@
     </div>
 
     <!-- 右侧设置面板 -->
-    <ChatRightPanel
-      v-if="currentRoom"
-      :room="currentRoom"
-      :seiyuu="currentSeiyuu"
-      :seiyuu-group="currentSeiyuuGroup"
-      :collapsed="rightPanelCollapsed"
-      @toggle="toggleRightPanel"
-      @update-settings="handleUpdateSettings"
-    />
+    <ChatRightPanel v-if="currentRoom" :room="currentRoom" :seiyuu="currentSeiyuu" :seiyuu-group="currentSeiyuuGroup"
+      :collapsed="rightPanelCollapsed" @toggle="toggleRightPanel" @update-settings="handleUpdateSettings" />
 
     <!-- AI模型管理器弹窗 -->
     <div v-if="showAIManager" class="ai-manager-overlay" @click="showAIManager = false">

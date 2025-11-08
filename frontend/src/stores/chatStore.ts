@@ -800,13 +800,15 @@ export const useChatStore = defineStore('chat', () => {
     const seiyuu1 = {
       id: seiyuu1Id,
       name: seiyuu1Data?.name || '未知声优',
-      avatar: seiyuu1Data?.avatar_url
+      avatar: seiyuu1Data?.avatar_url,
+      profile_markdown: seiyuu1Data?.profile_markdown || ''
     }
 
     const seiyuu2 = {
       id: seiyuu2Id,
       name: seiyuu2Data?.name || '未知声优',
-      avatar: seiyuu2Data?.avatar_url
+      avatar: seiyuu2Data?.avatar_url,
+      profile_markdown: seiyuu2Data?.profile_markdown || ''
     }
 
     return {
