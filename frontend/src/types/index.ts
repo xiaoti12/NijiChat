@@ -10,7 +10,12 @@ export type {
   SeiyuuGroup,
   SeiyuuBrief,
   CreateSeiyuuRequest,
-  UpdateSeiyuuRequest
+  UpdateSeiyuuRequest,
+  SeiyuuRelationship,
+  CreateRelationshipRequest,
+  UpdateRelationshipRequest,
+  GenerateRelationshipRequest,
+  GenerateRelationshipResponse
 } from './seiyuu'
 
 // 聊天相关类型
@@ -33,6 +38,7 @@ export type {
   AIModelConfig,
   AIModelType,
   AICallOptions,
+  AICallOptionsDual,
   AIResponse,
   AIStreamEvent,
   GeminiConfig,

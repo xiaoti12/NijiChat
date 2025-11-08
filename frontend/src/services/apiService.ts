@@ -23,7 +23,8 @@ import type {
   CreateRelationshipRequest,
   UpdateRelationshipRequest,
   GenerateRelationshipRequest,
-  GenerateRelationshipResponse
+  GenerateRelationshipResponse,
+  ApiResponse
 } from '@/types'
 
 // ========== 公开声优接口 ==========
@@ -132,14 +133,14 @@ export function adminGetAllGroups(): Promise<GroupListResponse> {
 /**
  * 创建群组
  */
-export function adminCreateGroup(data: Omit<SeiyuuGroup, 'id' | 'created_at' | 'updated_at'>): Promise<{ success: boolean; data: SeiyuuGroup }> {
+export function adminCreateGroup(data: Omit<SeiyuuGroup, 'id' | 'created_at' | 'updated_at'>): Promise<ApiResponse<SeiyuuGroup>> {
   return request.post<SeiyuuGroup>('/admin/groups', data)
 }
 
 /**
  * 更新群组
  */
-export function adminUpdateGroup(id: string, data: Partial<SeiyuuGroup>): Promise<{ success: boolean; data: SeiyuuGroup }> {
+export function adminUpdateGroup(id: string, data: Partial<SeiyuuGroup>): Promise<ApiResponse<SeiyuuGroup>> {
   return request.put<SeiyuuGroup>(`/admin/groups/${id}`, data)
 }
 
@@ -162,14 +163,14 @@ export function adminGenerateRelationship(data: GenerateRelationshipRequest): Pr
 /**
  * 创建声优关系
  */
-export function adminCreateRelationship(data: CreateRelationshipRequest): Promise<{ success: boolean; data: SeiyuuRelationship }> {
+export function adminCreateRelationship(data: CreateRelationshipRequest): Promise<ApiResponse<SeiyuuRelationship>> {
   return request.post<SeiyuuRelationship>('/admin/relationships', data)
 }
 
 /**
  * 查询声优关系
  */
-export function adminGetRelationship(seiyuuIdA?: string, seiyuuIdB?: string): Promise<{ success: boolean; data: SeiyuuRelationship[] | SeiyuuRelationship }> {
+export function adminGetRelationship(seiyuuIdA?: string, seiyuuIdB?: string): Promise<ApiResponse<SeiyuuRelationship[] | SeiyuuRelationship>> {
   const params = new URLSearchParams()
   if (seiyuuIdA) params.append('seiyuu_id_a', seiyuuIdA)
   if (seiyuuIdB) params.append('seiyuu_id_b', seiyuuIdB)
@@ -183,28 +184,28 @@ export function adminGetRelationship(seiyuuIdA?: string, seiyuuIdB?: string): Pr
 /**
  * 获取所有声优关系
  */
-export function adminGetAllRelationships(): Promise<{ success: boolean; data: SeiyuuRelationship[] }> {
+export function adminGetAllRelationships(): Promise<ApiResponse<SeiyuuRelationship[]>> {
   return request.get<SeiyuuRelationship[]>('/admin/relationships')
 }
 
 /**
  * 更新声优关系
  */
-export function adminUpdateRelationship(id: string, data: UpdateRelationshipRequest): Promise<{ success: boolean; data: SeiyuuRelationship }> {
+export function adminUpdateRelationship(id: string, data: UpdateRelationshipRequest): Promise<ApiResponse<SeiyuuRelationship>> {
   return request.put<SeiyuuRelationship>(`/admin/relationships/${id}`, data)
 }
 
 /**
  * 删除声优关系
  */
-export function adminDeleteRelationship(id: string): Promise<{ success: boolean }> {
+export function adminDeleteRelationship(id: string): Promise<ApiResponse<any>> {
   return request.delete(`/admin/relationships/${id}`)
 }
 
 /**
  * 获取声优的所有关系
  */
-export function adminGetSeiyuuRelationships(seiyuuId: string): Promise<{ success: boolean; data: SeiyuuRelationship[] }> {
+export function adminGetSeiyuuRelationships(seiyuuId: string): Promise<ApiResponse<SeiyuuRelationship[]>> {
   return request.get<SeiyuuRelationship[]>(`/admin/seiyuu/${seiyuuId}/relationships`)
 }
 
@@ -213,6 +214,6 @@ export function adminGetSeiyuuRelationships(seiyuuId: string): Promise<{ success
 /**
  * 健康检查
  */
-export function healthCheck(): Promise<{ success: boolean; message: string }> {
+export function healthCheck(): Promise<ApiResponse<any>> {
   return request.get('/health')
 }

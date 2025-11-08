@@ -65,7 +65,7 @@
           <div class="result-header">
             <div class="result-header-left">
               <h5>获取到的原始数据</h5>
-              <p class="result-info">你可以添加其他外部数据</p>
+              <p class="result-info">原始数据已保存，用于AI关系生成</p>
             </div>
             <button type="button" @click="processWithAI" class="btn btn-primary ai-process-btn"
               :disabled="aiProcessing">
@@ -74,9 +74,9 @@
             </button>
           </div>
           <div class="debug-info" v-if="moegirlData">
-            <small>调试信息：数据长度 {{ moegirlData.raw_text?.length || 0 }} 字符</small>
+            <small>调试信息：数据长度 {{ moegirlData.raw_text?.length || 0 }} 字符，已自动保存为原始资料</small>
           </div>
-          <textarea readonly :value="moegirlData.raw_text || ''" class="textarea moegirl-content" rows="8"
+          <textarea readonly :value="moegirlData.raw_text || ''" class="textarea moegirl-content" rows="6"
             :placeholder="moegirlData ? '数据加载中...' : '暂无数据'"></textarea>
         </div>
       </div>
@@ -99,6 +99,29 @@
               <li>**粗体**，*斜体*</li>
               <li>- 列表项目</li>
               <li>[链接](URL)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- 原始资料数据 -->
+      <div class="form-section">
+        <h4>原始资料数据 <span class="optional-badge">可选</span></h4>
+        <p class="section-desc">
+          用于AI关系生成的原始资料数据。如果从萌娘百科获取了数据，会自动填入此处。
+          此数据不会在前端显示，仅用于AI分析声优间的关系。
+        </p>
+
+        <div class="form-group">
+          <label>原始资料内容</label>
+          <textarea v-model="form.raw_profile_data" class="textarea raw-data-textarea"
+            placeholder="可选：输入未经处理的原始资料数据，用于AI关系生成..." rows="10"></textarea>
+          <div class="raw-data-help">
+            <p>此字段的用途：</p>
+            <ul>
+              <li>AI关系生成：用作声优关系分析的基础资料</li>
+              <li>可以是萌娘百科的原始内容、官方资料等未格式化数据</li>
+              <li>留空不影响基本功能，但会影响AI关系生成的准确性</li>
             </ul>
           </div>
         </div>
@@ -161,6 +184,7 @@ const form = reactive({
   name: '',
   avatar_url: '',
   profile_markdown: '',
+  raw_profile_data: '', // 原始资料数据，用于AI关系生成
   tags: [] as string[],
   status: 'pending' as const
 })
@@ -183,6 +207,7 @@ watch(() => props.seiyuu, (seiyuu) => {
     form.name = seiyuu.name
     form.avatar_url = seiyuu.avatar_url || ''
     form.profile_markdown = seiyuu.profile_markdown
+    form.raw_profile_data = seiyuu.raw_profile_data || ''
     form.tags = [...seiyuu.tags]
     form.status = seiyuu.status
   } else {
@@ -190,6 +215,7 @@ watch(() => props.seiyuu, (seiyuu) => {
     form.name = ''
     form.avatar_url = ''
     form.profile_markdown = ''
+    form.raw_profile_data = ''
     form.tags = []
     form.status = 'pending'
   }
@@ -216,6 +242,10 @@ async function fetchMoegirlData() {
     const response = await getMoegirlData(moegirlName.value.trim())
     if (response.success && response.data?.success && response.data?.data) {
       moegirlData.value = response.data.data
+
+      // 将原始数据保存到raw_profile_data字段，用于AI关系生成
+      form.raw_profile_data = response.data.data.raw_text || ''
+
       // 自动设置声优名称（如果还没有设置）
       if (!form.name && response.data.data.page_title) {
         form.name = response.data.data.page_title
@@ -297,6 +327,7 @@ async function handleSave() {
         name: form.name,
         avatar_url: form.avatar_url || undefined,
         profile_markdown: form.profile_markdown,
+        raw_profile_data: form.raw_profile_data || undefined,
         tags: form.tags,
         status: form.status
       }
@@ -311,6 +342,7 @@ async function handleSave() {
         name: form.name,
         avatar_url: form.avatar_url || undefined,
         profile_markdown: form.profile_markdown,
+        raw_profile_data: form.raw_profile_data || undefined,
         tags: form.tags
       }
 
@@ -617,6 +649,52 @@ async function handleSave() {
   line-height: 1.6;
   resize: vertical;
   box-sizing: border-box;
+}
+
+/* 原始资料文本域 */
+.raw-data-textarea {
+  width: 100%;
+  font-family: monospace;
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+  resize: vertical;
+  box-sizing: border-box;
+  background: #f8f9fa;
+  border: 1px solid var(--border-color);
+}
+
+.optional-badge {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  font-weight: var(--font-weight-normal);
+  background: var(--bg-secondary);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  margin-left: var(--spacing-sm);
+}
+
+.raw-data-help {
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-md);
+  background: #f0f9ff;
+  border: 1px solid #0284c7;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  color: #0c4a6e;
+}
+
+.raw-data-help p {
+  margin: 0 0 var(--spacing-sm) 0;
+  font-weight: var(--font-weight-medium);
+}
+
+.raw-data-help ul {
+  margin: 0;
+  padding-left: var(--spacing-lg);
+}
+
+.raw-data-help li {
+  margin-bottom: var(--spacing-xs);
 }
 
 .textarea-help {
