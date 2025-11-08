@@ -29,6 +29,10 @@ export interface Room {
   created_at: number            // 创建时间
   session_id?: string          // 会话ID，用于区分同一声优的不同对话会话
   session_name?: string        // 会话名称，用于用户识别不同会话
+  // 双人对话专用字段
+  dual_topic?: string          // 双人对话话题
+  dual_initiator_id?: string   // 发起方声优ID（用于确定消息显示位置）
+  dual_relationship?: string   // 双人关系描述
 }
 
 // 房间类型
@@ -104,6 +108,26 @@ export interface SeiyuuConversationGroup {
   totalUnread: number           // 未读消息总数
   lastMessage?: Message          // 最后一条消息
   lastActive?: number            // 最后活跃时间
+}
+
+// 按双人声优分组的对话
+export interface DualConversationGroup {
+  pairId: string                // 声优对ID (seiyuu1_id + seiyuu2_id)
+  seiyuu1: {
+    id: string
+    name: string
+    avatar?: string
+  }
+  seiyuu2: {
+    id: string
+    name: string
+    avatar?: string
+  }
+  rooms: Room[]                 // 该声优对的所有房间
+  totalSessions: number         // 会话总数
+  totalUnread: number           // 未读消息总数
+  lastMessage?: Message         // 最后一条消息
+  lastActive: number            // 最后活跃时间
 }
 
 // 聊天设置

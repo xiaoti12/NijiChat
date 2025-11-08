@@ -4,11 +4,13 @@
     <ChatSidebar
       :conversations="conversations"
       :seiyuu-groups="seiyuuGroups"
+      :dual-groups="dualGroups"
       :current-room-id="currentRoomId"
       :current-seiyuu-id="currentSeiyuuId"
       :collapsed="leftSidebarCollapsed"
       @select-conversation="handleSelectConversation"
       @select-seiyuu="handleSelectSeiyuu"
+      @select-dual-conversation="handleSelectDualConversation"
       @new-conversation="handleNewConversation"
       @toggle="toggleLeftSidebar"
     />
@@ -133,6 +135,9 @@ const currentSeiyuu = computed((): Seiyuu | null => {
 // 声优分组列表
 const seiyuuGroups = computed(() => chatStore.groupedConversations)
 
+// 双人对话分组列表
+const dualGroups = computed(() => chatStore.dualGroupedConversations)
+
 // 当前声优的分组信息
 const currentSeiyuuGroup = computed(() => {
   if (!currentSeiyuuId.value) return null
@@ -183,11 +188,31 @@ function handleSelectSeiyuu(seiyuuId: string) {
   rightPanelCollapsed.value = false
 }
 
+function handleSelectDualConversation(roomId: string) {
+  chatStore.setCurrentRoom(roomId)
+  // 清空当前声优ID，因为这是双人对话
+  currentSeiyuuId.value = null
+}
+
 function handleNewConversation() {
   router.push({ name: 'SeiyuuLibrary' })
 }
 
 async function handleSendMessage(content: string) {
+  if (!currentRoom.value) return
+
+  // 判断房间类型
+  if (currentRoom.value.type === '1v1') {
+    // 1v1对话需要当前声优
+    if (!currentSeiyuu.value) return
+    await handleSendMessage1v1(content)
+  } else if (currentRoom.value.type === 'dual_theater') {
+    // 双人对话
+    await handleSendMessageDual(content)
+  }
+}
+
+async function handleSendMessage1v1(content: string) {
   if (!currentRoom.value || !currentSeiyuu.value) return
 
   try {
@@ -281,6 +306,92 @@ async function handleSendMessage(content: string) {
     })
 
     // 错误情况下也需要停止加载状态
+    if (chatInterfaceRef.value) {
+      chatInterfaceRef.value.stopTyping()
+    }
+  } finally {
+    loading.value = false
+  }
+}
+
+async function handleSendMessageDual(content: string) {
+  if (!currentRoom.value || currentRoom.value.type !== 'dual_theater') return
+
+  try {
+    loading.value = true
+
+    // 双人对话不需要用户输入，直接生成下一句对话
+    const conversationHistory = chatStore.getRecentMessages(currentRoom.value.id, 15)
+    const selectedModel = configStore.config.selected_chat_model
+
+    if (!useRealAI.value) {
+      throw new Error('请先配置AI模型才能开始双人对话')
+    }
+
+    // 获取双人对话的声优信息
+    const dualInfo = chatStore.getCurrentDualSeiyuu()
+    if (!dualInfo) {
+      throw new Error('无法获取双人对话信息')
+    }
+
+    const { initiator, responder } = dualInfo
+
+    // 确定下一个发言者（简单轮流）
+    let nextSpeaker = initiator
+    let otherSpeaker = responder
+
+    if (conversationHistory.length > 0) {
+      const lastMessage = conversationHistory[conversationHistory.length - 1]
+      // 如果最后一条消息是发起者说的，下一个应该是响应者
+      if (lastMessage.sender_id === initiator.id) {
+        nextSpeaker = responder
+        otherSpeaker = initiator
+      }
+    }
+
+    console.log('🎭 双人对话AI回复生成:', { nextSpeaker, otherSpeaker })
+
+    // 生成双人对话AI回复
+    const aiReply = await aiService.generateDualReply({
+      responder_profile: nextSpeaker.profile_markdown || '',
+      initiator_profile: otherSpeaker.profile_markdown || '',
+      relationship_description: currentRoom.value.dual_relationship || '两人是朋友关系',
+      conversation_history: conversationHistory,
+      current_topic: currentRoom.value.dual_topic,
+      model_id: selectedModel
+    })
+
+    // 添加AI回复消息
+    chatStore.addMessage({
+      room_id: currentRoom.value.id,
+      sender_id: nextSpeaker.id,
+      sender_name: nextSpeaker.name,
+      sender_avatar: nextSpeaker.avatar_url,
+      content: aiReply
+    })
+
+    // AI回复完成后停止加载状态
+    if (chatInterfaceRef.value) {
+      chatInterfaceRef.value.stopTyping()
+    }
+
+  } catch (error) {
+    console.error('双人对话生成失败:', error)
+
+    let errorMessage = '双人对话遇到了一些问题...'
+    if (error instanceof Error) {
+      if (error.message.includes('请先配置AI模型')) {
+        errorMessage = '请先配置AI模型才能开始双人对话～'
+      }
+    }
+
+    chatStore.addMessage({
+      room_id: currentRoom.value.id,
+      sender_id: 'system',
+      sender_name: '系统',
+      content: errorMessage
+    })
+
     if (chatInterfaceRef.value) {
       chatInterfaceRef.value.stopTyping()
     }

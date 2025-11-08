@@ -149,12 +149,77 @@
         </div>
       </div>
 
+      <!-- 双人对话分组列表 -->
+      <div v-if="props.dualGroups.length > 0" class="conversation-section">
+        <div v-if="!props.collapsed" class="section-header">
+          <h3 class="section-title">双人对话</h3>
+          <span class="section-count">{{ props.dualGroups.length }}</span>
+        </div>
 
+        <div :class="['conversation-list', { collapsed: props.collapsed }]">
+          <div v-for="group in props.dualGroups" :key="group.pairId" :class="[
+            'conversation-item',
+            'dual-conversation-item',
+            { active: group.rooms.some(r => r.id === props.currentRoomId) },
+            { collapsed: props.collapsed }
+          ]" @click="handleSelectDualConversation(group.rooms[0]?.id)">
+            <!-- 双人头像组合 -->
+            <div class="dual-conversation-avatar">
+              <div class="dual-avatar-container">
+                <!-- 声优1头像 -->
+                <img v-if="group.seiyuu1.avatar" :src="group.seiyuu1.avatar"
+                     :alt="group.seiyuu1.name" class="dual-avatar dual-avatar-1" />
+                <div v-else class="dual-avatar-placeholder dual-avatar-1">
+                  {{ group.seiyuu1.name.charAt(0) || '?' }}
+                </div>
+
+                <!-- 声优2头像 -->
+                <img v-if="group.seiyuu2.avatar" :src="group.seiyuu2.avatar"
+                     :alt="group.seiyuu2.name" class="dual-avatar dual-avatar-2" />
+                <div v-else class="dual-avatar-placeholder dual-avatar-2">
+                  {{ group.seiyuu2.name.charAt(0) || '?' }}
+                </div>
+              </div>
+
+              <!-- 未读徽章 -->
+              <span v-if="group.totalUnread > 0" class="conversation-badge">
+                {{ group.totalUnread > 99 ? '99+' : group.totalUnread }}
+              </span>
+              <!-- 会话数量徽章 -->
+              <span v-if="group.totalSessions > 1" class="session-count-badge">
+                {{ group.totalSessions }}
+              </span>
+            </div>
+
+            <div v-if="!props.collapsed" class="conversation-content">
+              <div class="conversation-header">
+                <h4 class="conversation-name">{{ group.seiyuu1.name }} × {{ group.seiyuu2.name }}</h4>
+                <span class="conversation-time">{{ formatTime(group.lastActive) }}</span>
+              </div>
+              <div class="conversation-preview">
+                <p class="last-message">{{ group.lastMessage?.content || '暂无消息' }}</p>
+              </div>
+              <div class="conversation-meta">
+                <span class="session-info">{{ group.totalSessions }} 个对话</span>
+              </div>
+            </div>
+
+            <!-- 收起状态下的悬浮提示 -->
+            <div v-else class="conversation-tooltip">
+              <div class="tooltip-content">
+                <div class="tooltip-name">{{ group.seiyuu1.name }} × {{ group.seiyuu2.name }}</div>
+                <div class="tooltip-preview">{{ group.lastMessage?.content || '暂无消息' }}</div>
+                <div class="tooltip-meta">{{ group.totalSessions }} 个对话</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <!-- 空状态 -->
-      <div v-if="filteredSeiyuuGroups.length === 0 && !searchQuery" class="empty-conversations">
+      <div v-if="filteredSeiyuuGroups.length === 0 && props.dualGroups.length === 0 && !searchQuery" class="empty-conversations">
         <div class="empty-icon">💭</div>
-        <p class="empty-text">还没有声优对话呢</p>
+        <p class="empty-text">还没有对话呢</p>
         <button @click="handleNewConversation" class="btn btn-primary">浏览声优库</button>
       </div>
 
@@ -170,7 +235,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import type { Conversation, SeiyuuConversationGroup, DualTheater, GroupTheater } from '@/types'
+import type { Conversation, SeiyuuConversationGroup, DualConversationGroup, DualTheater, GroupTheater } from '@/types'
 
 // Props
 const props = defineProps<{
@@ -178,6 +243,7 @@ const props = defineProps<{
   currentRoomId: string | null
   currentSeiyuuId: string | null
   seiyuuGroups: SeiyuuConversationGroup[]
+  dualGroups: DualConversationGroup[]
   collapsed?: boolean
 }>()
 
@@ -185,6 +251,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   selectConversation: [roomId: string]
   selectSeiyuu: [seiyuuId: string]
+  selectDualConversation: [roomId: string]
   newConversation: []
   toggle: []
 }>()
@@ -228,6 +295,10 @@ function handleSelectSeiyuu(seiyuuId: string) {
   emit('selectSeiyuu', seiyuuId)
 }
 
+function handleSelectDualConversation(roomId: string) {
+  emit('selectDualConversation', roomId)
+}
+
 function handleNewConversation() {
   emit('newConversation')
 }
@@ -259,7 +330,7 @@ function handleModeSelection(mode: string) {
   }
 }
 
-function formatTime(timestamp: string): string {
+function formatTime(timestamp: string | number): string {
   const date = new Date(timestamp)
   const now = new Date()
   const diff = now.getTime() - date.getTime()
@@ -663,6 +734,90 @@ function formatTime(timestamp: string): string {
 
 .conversation-item.collapsed .conversation-avatar {
   margin-right: 0;
+}
+
+/* 双人对话头像 */
+.dual-conversation-avatar {
+  margin-right: 12px;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.conversation-item.collapsed .dual-conversation-avatar {
+  margin-right: 0;
+}
+
+.dual-avatar-container {
+  position: relative;
+  width: 52px;
+  height: 44px;
+}
+
+.conversation-item.collapsed .dual-avatar-container {
+  width: 42px;
+  height: 36px;
+}
+
+.dual-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  position: absolute;
+}
+
+.conversation-item.collapsed .dual-avatar {
+  width: 26px;
+  height: 26px;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+}
+
+.dual-avatar-1 {
+  left: 0;
+  top: 0;
+  z-index: 2;
+}
+
+.dual-avatar-2 {
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+}
+
+.dual-avatar-placeholder {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #fead00, #ff791b);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 12px;
+  position: absolute;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+}
+
+.conversation-item.collapsed .dual-avatar-placeholder {
+  width: 26px;
+  height: 26px;
+  font-size: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+}
+
+.dual-avatar-placeholder.dual-avatar-1 {
+  left: 0;
+  top: 0;
+  z-index: 2;
+}
+
+.dual-avatar-placeholder.dual-avatar-2 {
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
 }
 
 .avatar {

@@ -3,14 +3,38 @@
     <!-- 聊天头部 -->
     <div class="chat-header">
       <div class="header-avatar">
-        <img v-if="seiyuu?.avatar_url" :src="seiyuu.avatar_url" :alt="seiyuu.name" class="avatar" />
-        <div v-else class="avatar-placeholder">
-          {{ seiyuu?.name?.charAt(0) || '?' }}
-        </div>
+        <!-- 单人对话头像 -->
+        <template v-if="!isDualConversation">
+          <img v-if="seiyuu?.avatar_url" :src="seiyuu.avatar_url" :alt="seiyuu.name" class="avatar" />
+          <div v-else class="avatar-placeholder">
+            {{ seiyuu?.name?.charAt(0) || '?' }}
+          </div>
+        </template>
+
+        <!-- 双人对话头像 -->
+        <template v-else-if="dualSeiyuu">
+          <div class="dual-avatar-group">
+            <div class="dual-avatar dual-avatar-1">
+              <img v-if="dualSeiyuu.initiator.avatar" :src="dualSeiyuu.initiator.avatar"
+                   :alt="dualSeiyuu.initiator.name" class="avatar" />
+              <div v-else class="avatar-placeholder">
+                {{ dualSeiyuu.initiator.name?.charAt(0) || '?' }}
+              </div>
+            </div>
+            <div class="dual-avatar dual-avatar-2">
+              <img v-if="dualSeiyuu.responder.avatar" :src="dualSeiyuu.responder.avatar"
+                   :alt="dualSeiyuu.responder.name" class="avatar" />
+              <div v-else class="avatar-placeholder">
+                {{ dualSeiyuu.responder.name?.charAt(0) || '?' }}
+              </div>
+            </div>
+          </div>
+        </template>
       </div>
 
       <div class="header-info">
-        <h3 class="header-name">{{ seiyuu?.name || '未知声优' }}</h3>
+        <h3 class="header-name">{{ headerTitle }}</h3>
+        <p v-if="isDualConversation && room.dual_topic" class="header-topic">{{ room.dual_topic }}</p>
       </div>
 
       <div class="header-actions">
@@ -30,25 +54,54 @@
       <div class="messages-list">
         <!-- 欢迎消息 -->
         <div v-if="messages.length === 0" class="welcome-message">
-          <div class="welcome-avatar">
-            <img v-if="seiyuu?.avatar_url" :src="seiyuu.avatar_url" :alt="seiyuu.name" class="avatar" />
-            <div v-else class="avatar-placeholder">
-              {{ seiyuu?.name?.charAt(0) || '?' }}
+          <!-- 单人对话欢迎消息 -->
+          <template v-if="!isDualConversation">
+            <div class="welcome-avatar">
+              <img v-if="seiyuu?.avatar_url" :src="seiyuu.avatar_url" :alt="seiyuu.name" class="avatar" />
+              <div v-else class="avatar-placeholder">
+                {{ seiyuu?.name?.charAt(0) || '?' }}
+              </div>
             </div>
-          </div>
-          <div class="welcome-content">
-            <h4>开始与 {{ seiyuu?.name }} 对话</h4>
-            <p>你好！我是 {{ seiyuu?.name }}，很高兴和你聊天～有什么想说的吗？</p>
-          </div>
+            <div class="welcome-content">
+              <h4>开始与 {{ seiyuu?.name }} 对话</h4>
+              <p>你好！我是 {{ seiyuu?.name }}，很高兴和你聊天～有什么想说的吗？</p>
+            </div>
+          </template>
+
+          <!-- 双人对话欢迎消息 -->
+          <template v-else-if="dualSeiyuu">
+            <div class="welcome-avatar">
+              <div class="dual-avatar-group welcome-dual">
+                <div class="dual-avatar dual-avatar-1">
+                  <img v-if="dualSeiyuu.initiator.avatar" :src="dualSeiyuu.initiator.avatar"
+                       :alt="dualSeiyuu.initiator.name" class="avatar" />
+                  <div v-else class="avatar-placeholder">
+                    {{ dualSeiyuu.initiator.name?.charAt(0) || '?' }}
+                  </div>
+                </div>
+                <div class="dual-avatar dual-avatar-2">
+                  <img v-if="dualSeiyuu.responder.avatar" :src="dualSeiyuu.responder.avatar"
+                       :alt="dualSeiyuu.responder.name" class="avatar" />
+                  <div v-else class="avatar-placeholder">
+                    {{ dualSeiyuu.responder.name?.charAt(0) || '?' }}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="welcome-content">
+              <h4>{{ dualSeiyuu.initiator.name }} × {{ dualSeiyuu.responder.name }} 双人剧场</h4>
+              <p>{{ room.dual_topic || '两位角色正准备开始对话，点击下方按钮开始剧场表演～' }}</p>
+            </div>
+          </template>
         </div>
 
         <!-- 消息列表 -->
         <div v-for="message in messages" :key="message.id" :class="[
           'message-wrapper',
-          message.sender_id === 'user-1' ? 'user-message' : 'seiyuu-message'
+          getMessageClass(message)
         ]">
-          <!-- 声优消息 -->
-          <div v-if="message.sender_id !== 'user-1'" class="message-row">
+          <!-- 声优消息 (左侧) 包括单人对话和双人对话的响应者 -->
+          <div v-if="message.sender_id !== 'user-1' && getMessageClass(message) !== 'initiator-message'" class="message-row">
             <div class="message-avatar">
               <img v-if="message.sender_avatar" :src="message.sender_avatar" :alt="message.sender_name"
                 class="avatar" />
@@ -68,7 +121,7 @@
             </div>
           </div>
 
-          <!-- 用户消息 -->
+          <!-- 发起者消息 (右侧) 包括用户消息和双人对话的发起者 -->
           <div v-else class="message-row user-row">
             <div class="message-content">
               <div class="message-header">
@@ -81,13 +134,22 @@
             </div>
 
             <div class="message-avatar">
-              <div class="user-avatar">
+              <!-- 真实用户头像 -->
+              <div v-if="message.sender_id === 'user-1'" class="user-avatar">
                 <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor">
                   <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0z" />
                   <path
                     d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1z" />
                 </svg>
               </div>
+              <!-- 双人对话发起者头像 -->
+              <template v-else>
+                <img v-if="message.sender_avatar" :src="message.sender_avatar" :alt="message.sender_name"
+                  class="avatar" />
+                <div v-else class="avatar-placeholder">
+                  {{ message.sender_name?.charAt(0) || '?' }}
+                </div>
+              </template>
             </div>
           </div>
         </div>
@@ -117,7 +179,7 @@
     </div>
 
     <!-- 输入区域 -->
-    <div class="input-area">
+    <div class="input-area" v-if="!isDualConversation">
       <div class="input-container">
         <div class="input-wrapper" :class="{ focused: inputFocused }">
           <textarea ref="messageInput" v-model="currentMessage" placeholder="输入消息..." class="message-input" rows="1"
@@ -139,12 +201,28 @@
         按 <kbd>Enter</kbd> 发送，<kbd>Shift + Enter</kbd> 换行
       </div>
     </div>
+
+    <!-- 双人对话控制区域 -->
+    <div v-else class="dual-control-area">
+      <button :disabled="isLoading" class="continue-btn" @click="handleContinueDual">
+        <svg v-if="!isLoading" width="18" height="18" viewBox="0 0 16 16" fill="currentColor">
+          <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
+        </svg>
+        <div v-else class="loading-spinner"></div>
+        <span>{{ isLoading ? '正在生成...' : '继续对话' }}</span>
+      </button>
+
+      <div class="dual-hint">
+        点击按钮让角色们继续对话
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, nextTick, watch } from 'vue'
 import type { Room, Message, Seiyuu } from '@/types'
+import { useChatStore } from '@/stores/chatStore'
 
 // Props
 const props = defineProps<{
@@ -160,6 +238,9 @@ const emit = defineEmits<{
   toggleSettings: []
 }>()
 
+// Store
+const chatStore = useChatStore()
+
 // 响应式数据
 const currentMessage = ref('')
 const inputFocused = ref(false)
@@ -173,7 +254,44 @@ const canSend = computed(() => {
   return currentMessage.value.trim().length > 0 && !isLoading.value
 })
 
+// 判断是否为双人对话
+const isDualConversation = computed(() => {
+  return props.room.type === 'dual_theater'
+})
+
+// 获取双人对话的声优信息
+const dualSeiyuu = computed(() => {
+  if (!isDualConversation.value) return null
+  return chatStore.getCurrentDualSeiyuu()
+})
+
+// 头部显示名称
+const headerTitle = computed(() => {
+  if (isDualConversation.value && dualSeiyuu.value) {
+    return `${dualSeiyuu.value.initiator.name} × ${dualSeiyuu.value.responder.name}`
+  }
+  return props.seiyuu?.name || '未知声优'
+})
+
 // 方法
+function getMessageClass(message: Message) {
+  if (message.sender_id === 'user-1') {
+    return 'user-message'
+  }
+
+  // 双人对话中，根据发起者确定消息位置
+  if (isDualConversation.value && dualSeiyuu.value) {
+    // 发起者的消息显示在右侧（类似用户消息）
+    if (message.sender_id === dualSeiyuu.value.initiator.id) {
+      return 'initiator-message'
+    } else {
+      return 'responder-message'
+    }
+  }
+
+  return 'seiyuu-message'
+}
+
 function handleKeyDown(event: KeyboardEvent) {
   if (event.key === 'Enter' && !event.shiftKey) {
     event.preventDefault()
@@ -235,6 +353,13 @@ function formatTime(timestamp: number): string {
 
 function handleToggleSettings() {
   emit('toggleSettings')
+}
+
+function handleContinueDual() {
+  if (!isDualConversation.value) return
+
+  // 双人对话使用空字符串触发继续对话
+  emit('sendMessage', '')
 }
 
 // 暴露方法给父组件，用于控制加载状态
@@ -312,6 +437,13 @@ watch(
   margin: 0 0 2px 0;
 }
 
+.header-topic {
+  font-size: 12px;
+  color: #6b7280;
+  margin: 0;
+  font-style: italic;
+}
+
 
 .header-actions {
   display: flex;
@@ -374,6 +506,70 @@ watch(
   font-size: 20px;
 }
 
+/* 双人头像组合 */
+.dual-avatar-group {
+  position: relative;
+  width: 56px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+}
+
+.dual-avatar-group.welcome-dual {
+  width: 64px;
+  height: 56px;
+}
+
+.dual-avatar {
+  position: absolute;
+  border: 2px solid white;
+  border-radius: 50%;
+  transition: transform 0.2s ease;
+}
+
+.dual-avatar:hover {
+  transform: scale(1.05);
+}
+
+.dual-avatar-1 {
+  left: 0;
+  z-index: 2;
+  box-shadow: 0 2px 8px rgba(254, 173, 0, 0.2);
+}
+
+.dual-avatar-2 {
+  right: 0;
+  z-index: 1;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.2);
+}
+
+.dual-avatar .avatar,
+.dual-avatar .avatar-placeholder {
+  width: 32px;
+  height: 32px;
+  font-size: 12px;
+}
+
+.welcome-dual .dual-avatar .avatar,
+.welcome-dual .dual-avatar .avatar-placeholder {
+  width: 40px;
+  height: 40px;
+  font-size: 16px;
+}
+
+/* 双人头像组合在聊天头部的样式 */
+.chat-header .dual-avatar-group {
+  width: 60px;
+  height: 48px;
+}
+
+.chat-header .dual-avatar .avatar,
+.chat-header .dual-avatar .avatar-placeholder {
+  width: 36px;
+  height: 36px;
+  font-size: 14px;
+}
+
 .welcome-content h4 {
   font-size: 16px;
   font-weight: 600;
@@ -391,6 +587,27 @@ watch(
 /* 消息行 */
 .message-wrapper {
   margin-bottom: 16px;
+}
+
+/* 双人对话消息样式 */
+.message-wrapper.initiator-message {
+  /* 发起者消息显示在右侧，类似用户消息 */
+}
+
+.message-wrapper.initiator-message .user-bubble {
+  /* 发起者消息使用稍微不同的渐变，表示是剧场发起者 */
+  background: linear-gradient(135deg, #fead00, #ff9800);
+  box-shadow: 0 2px 8px rgba(254, 173, 0, 0.35);
+}
+
+.message-wrapper.responder-message {
+  /* 响应者消息显示在左侧，类似声优消息 */
+}
+
+.message-wrapper.responder-message .seiyuu-bubble {
+  /* 响应者消息使用稍微不同的边框，表示是剧场响应者 */
+  border-left: 3px solid #4f46e5;
+  background: white;
 }
 
 .message-row {
@@ -641,6 +858,47 @@ kbd {
   padding: 1px 4px;
   font-size: 10px;
   font-family: monospace;
+}
+
+/* 双人对话控制区域 */
+.dual-control-area {
+  background: white;
+  border-top: 1px solid #e5e7eb;
+  padding: 20px 24px;
+  text-align: center;
+}
+
+.continue-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #fead00, #ff791b);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 8px;
+}
+
+.continue-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(254, 173, 0, 0.4);
+}
+
+.continue-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.dual-hint {
+  font-size: 12px;
+  color: #9ca3af;
 }
 
 /* 响应式 */

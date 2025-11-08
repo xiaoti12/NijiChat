@@ -94,62 +94,13 @@
             <input v-model="currentTopic" type="text" placeholder="例如：聊聊最近的工作、讨论一部动漫作品等..." class="input topic-field" />
           </div>
           <button @click="startTheater" :disabled="!canStartTheater" class="btn btn-primary start-btn">
-            开始对话
+            创建剧场并开始对话
           </button>
         </div>
       </div>
     </div>
 
-    <!-- 对话进行阶段 -->
-    <div v-if="theaterStarted" class="theater-section">
-      <!-- 对话控制栏 -->
-      <div class="theater-controls">
-        <div class="current-topic" v-if="currentTopic">
-          <span class="topic-label">当前话题:</span>
-          <span class="topic-text">{{ currentTopic }}</span>
-        </div>
-        <div class="control-buttons">
-          <button @click="nextDialogue" :disabled="generating" class="btn btn-primary">
-            {{ generating ? '生成中...' : '下一句' }}
-          </button>
-          <button @click="resetTheater" class="btn btn-secondary">
-            重新开始
-          </button>
-        </div>
-      </div>
-
-      <!-- 对话显示区 -->
-      <div class="chat-container">
-        <div class="chat-messages" ref="messagesContainer">
-          <div v-for="message in messages" :key="message.id" class="message-wrapper" :class="{
-            'message-seiyuu1': message.sender_id === selectedSeiyuu1?.id,
-            'message-seiyuu2': message.sender_id === selectedSeiyuu2?.id
-          }">
-            <div class="message-content">
-              <div class="message-header">
-                <img v-if="getSpeakerAvatar(message.sender_id)" :src="getSpeakerAvatar(message.sender_id)"
-                  :alt="message.sender_name" class="message-avatar" />
-                <span class="message-name">{{ message.sender_name }}</span>
-                <span class="message-time">{{ formatTime(message.timestamp) }}</span>
-              </div>
-              <div class="message-text">
-                {{ message.content }}
-              </div>
-            </div>
-          </div>
-
-          <!-- 生成中指示器 -->
-          <div v-if="generating" class="generating-indicator">
-            <div class="typing-animation">
-              <span class="typing-dot"></span>
-              <span class="typing-dot"></span>
-              <span class="typing-dot"></span>
-            </div>
-            <span class="generating-text">{{ nextSpeaker?.name }} 正在思考...</span>
-          </div>
-        </div>
-      </div>
-    </div>
+    <!-- 对话进行阶段已移除 - 对话功能已转移到ChatHome主页面 -->
   </div>
 </template>
 
@@ -159,10 +110,12 @@ import { useRouter } from 'vue-router'
 import type { Seiyuu, SeiyuuRelationship, Message } from '@/types'
 import { getSeiyuuList, adminGetRelationship } from '@/services/apiService'
 import { useAIService } from '@/services/aiService'
+import { useChatStore } from '@/stores/chatStore'
 import SeiyuuPicker from '@/components/SeiyuuPicker.vue'
 
 const router = useRouter()
 const aiService = useAIService()
+const chatStore = useChatStore()
 
 // 响应式数据
 const selectedSeiyuu1 = ref<Seiyuu | null>(null)
@@ -225,66 +178,67 @@ async function loadRelationship() {
 }
 
 function startTheater() {
-  if (!canStartTheater.value) return
-
-  theaterStarted.value = true
-  messages.value = []
-  currentSpeakerIndex.value = 0
-
-  // 第一句对话
-  nextDialogue()
-}
-
-async function nextDialogue() {
-  if (!selectedSeiyuu1.value || !selectedSeiyuu2.value || generating.value) return
-
-  const speaker = nextSpeaker.value!
-  const otherSpeakerData = otherSpeaker.value!
-
-  generating.value = true
+  if (!canStartTheater.value || !selectedSeiyuu1.value || !selectedSeiyuu2.value) return
 
   try {
-    const relationshipDesc = relationship.value?.relationship_description ||
-      `${selectedSeiyuu1.value.name}和${selectedSeiyuu2.value.name}是同行，彼此了解但不算特别熟悉的关系。`
-
-    const response = await aiService.generateDualReply({
-      responder_profile: speaker.profile_markdown,
-      initiator_profile: otherSpeakerData.profile_markdown,
-      relationship_description: relationshipDesc,
-      conversation_history: messages.value,
-      current_topic: currentTopic.value || undefined
+    console.log('🎭 开始创建双人剧场:', {
+      seiyuu1: selectedSeiyuu1.value.name,
+      seiyuu2: selectedSeiyuu2.value.name,
+      topic: currentTopic.value
     })
 
-    // 添加新消息
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      room_id: 'dual-theater',
-      sender_id: speaker.id,
-      sender_name: speaker.name,
-      sender_avatar: speaker.avatar_url,
-      content: response,
-      timestamp: Date.now(),
-      type: 'text'
-    }
+    // 创建双人对话房间
+  const relationshipDesc = relationship.value?.relationship_description ||
+    `${selectedSeiyuu1.value.name}和${selectedSeiyuu2.value.name}是同行，彼此了解但不算特别熟悉的关系。`
 
-    messages.value.push(newMessage)
+  const seiyuu1Data = {
+    id: selectedSeiyuu1.value.id,
+    name: selectedSeiyuu1.value.name,
+    avatar: selectedSeiyuu1.value.avatar_url
+  }
 
-    // 切换发言人
-    currentSpeakerIndex.value = 1 - currentSpeakerIndex.value
+  const seiyuu2Data = {
+    id: selectedSeiyuu2.value.id,
+    name: selectedSeiyuu2.value.name,
+    avatar: selectedSeiyuu2.value.avatar_url
+  }
 
-    // 滚动到底部
-    await nextTick()
-    scrollToBottom()
+  const sessionOptions = {
+    topic: currentTopic.value || undefined,
+    initiatorId: selectedSeiyuu1.value.id, // 第一个选择的声优作为发起者
+    relationship: relationshipDesc
+  }
 
-  } catch (error: any) {
-    console.error('生成对话失败:', error.message)
-    alert(`生成对话失败：${error.message}`)
-  } finally {
-    generating.value = false
+  const newRoom = chatStore.createDualSession(
+    seiyuu1Data,
+    seiyuu2Data,
+    sessionOptions
+  )
+
+  // 跳转到主页面，并选中新创建的双人对话房间
+  router.push({ name: 'Home' })
+
+    console.log('✅ 双人剧场已创建，跳转到主页面:', {
+      roomId: newRoom.id,
+      seiyuu1: selectedSeiyuu1.value.name,
+      seiyuu2: selectedSeiyuu2.value.name,
+      topic: currentTopic.value,
+      relationship: relationshipDesc
+    })
+  } catch (error) {
+    console.error('❌ 创建双人剧场失败:', error)
+    alert('创建双人剧场失败，请检查控制台错误信息。')
   }
 }
 
+// 以下方法已不再使用，对话功能已转移到主页面
+async function nextDialogue() {
+  // 不再使用 - 对话功能已转移到ChatHome页面
+  console.log('nextDialogue方法已废弃，对话功能已转移到ChatHome页面')
+}
+
 function resetTheater() {
+  // 不再使用 - 对话功能已转移到ChatHome页面
   theaterStarted.value = false
   messages.value = []
   currentSpeakerIndex.value = 0

@@ -30,6 +30,7 @@ export type {
   TheaterStatus,
   TheaterMessage,
   SeiyuuConversationGroup,
+  DualConversationGroup,
   ChatSettings
 } from './chat'
 

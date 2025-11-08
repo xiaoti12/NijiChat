@@ -3,7 +3,7 @@
     <!-- 面板头部 -->
     <div class="panel-header">
       <h3 class="panel-title">
-        {{ props.seiyuuGroup?.seiyuuName ? `${props.seiyuuGroup.seiyuuName} - 会话管理` : '聊天设置' }}
+        {{ getPanelTitle() }}
       </h3>
       <button @click="handleToggle" class="toggle-btn" :title="collapsed ? '展开面板' : '收起面板'">
         <svg :class="{ rotated: collapsed }" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
@@ -15,13 +15,14 @@
 
     <!-- 面板内容 -->
     <div v-if="!collapsed" class="panel-content">
-      <!-- 声优信息 -->
+      <!-- 角色信息 -->
       <div class="panel-section">
         <div class="section-header">
-          <h4 class="section-title">角色信息</h4>
+          <h4 class="section-title">{{ isDualConversation ? '双人剧场信息' : '角色信息' }}</h4>
         </div>
 
-        <div class="seiyuu-profile">
+        <!-- 单人对话角色信息 -->
+        <div v-if="!isDualConversation" class="seiyuu-profile">
           <div class="profile-avatar">
             <img v-if="seiyuu?.avatar_url" :src="seiyuu.avatar_url" :alt="seiyuu.name" class="avatar" />
             <div v-else class="avatar-placeholder">
@@ -35,6 +36,47 @@
               <span v-for="tag in seiyuu?.tags" :key="tag" class="tag">{{ tag }}</span>
             </div>
           </div>
+        </div>
+
+        <!-- 双人对话信息 -->
+        <div v-else-if="dualSeiyuu" class="dual-profile">
+          <div class="dual-info-item">
+            <div class="dual-label">发起者</div>
+            <div class="seiyuu-profile compact">
+              <div class="profile-avatar">
+                <img v-if="dualSeiyuu.initiator.avatar" :src="dualSeiyuu.initiator.avatar"
+                     :alt="dualSeiyuu.initiator.name" class="avatar" />
+                <div v-else class="avatar-placeholder">
+                  {{ dualSeiyuu.initiator.name?.charAt(0) || '?' }}
+                </div>
+              </div>
+              <div class="profile-info">
+                <h5 class="profile-name">{{ dualSeiyuu.initiator.name }}</h5>
+              </div>
+            </div>
+          </div>
+
+          <div class="dual-info-item">
+            <div class="dual-label">响应者</div>
+            <div class="seiyuu-profile compact">
+              <div class="profile-avatar">
+                <img v-if="dualSeiyuu.responder.avatar" :src="dualSeiyuu.responder.avatar"
+                     :alt="dualSeiyuu.responder.name" class="avatar" />
+                <div v-else class="avatar-placeholder">
+                  {{ dualSeiyuu.responder.name?.charAt(0) || '?' }}
+                </div>
+              </div>
+              <div class="profile-info">
+                <h5 class="profile-name">{{ dualSeiyuu.responder.name }}</h5>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="room.dual_topic" class="dual-topic">
+            <div class="dual-label">话题</div>
+            <p class="topic-text">{{ room.dual_topic }}</p>
+          </div>
+
         </div>
       </div>
 
@@ -145,8 +187,8 @@
         </div>
       </div>
 
-      <!-- 快捷操作 -->
-      <div class="panel-section">
+      <!-- 快捷操作 (仅1v1对话显示) -->
+      <div v-if="!isDualConversation" class="panel-section">
         <div class="section-header">
           <h4 class="section-title">快捷操作</h4>
         </div>
@@ -180,8 +222,8 @@
         </div>
       </div>
 
-      <!-- 对话历史 -->
-      <div class="panel-section" v-if="props.seiyuuGroup">
+      <!-- 对话历史 (仅1v1对话显示) -->
+      <div class="panel-section" v-if="!isDualConversation && props.seiyuuGroup">
         <div class="section-header">
           <h4 class="section-title">会话列表</h4>
           <span class="section-count">{{ sessionList.length }}</span>
@@ -222,6 +264,7 @@ import { ref, reactive, computed, watch } from 'vue'
 import { useAIModelStore } from '@/stores/aiModelStore'
 import { useConfigStore } from '@/stores/configStore'
 import { useChatStore } from '@/stores/chatStore'
+import { useSeiyuuStore } from '@/stores/seiyuuStore'
 import type { Room, Seiyuu, SeiyuuConversationGroup } from '@/types'
 import AIModelManager from './AIModelManager.vue'
 
@@ -243,6 +286,7 @@ const emit = defineEmits<{
 const aiModelStore = useAIModelStore()
 const configStore = useConfigStore()
 const chatStore = useChatStore()
+const seiyuuStore = useSeiyuuStore()
 
 // 状态
 const showAIManager = ref(false)
@@ -270,6 +314,17 @@ const hasAnyModels = computed(() => {
   return aiModelStore.models.length > 0
 })
 
+// 判断是否为双人对话
+const isDualConversation = computed(() => {
+  return props.room.type === 'dual_theater'
+})
+
+// 获取双人对话的声优信息
+const dualSeiyuu = computed(() => {
+  if (!isDualConversation.value) return null
+  return chatStore.getCurrentDualSeiyuu()
+})
+
 // 历史记录 - 获取当前声优的所有会话
 const sessionList = computed(() => {
   if (!props.seiyuu) return []
@@ -293,6 +348,13 @@ watch(selectedModelId, (newValue) => {
 })
 
 // 方法
+function getPanelTitle() {
+  if (isDualConversation.value && dualSeiyuu.value) {
+    return '双人剧场设置'
+  }
+  return props.seiyuuGroup?.seiyuuName ? `${props.seiyuuGroup.seiyuuName} - 会话管理` : '聊天设置'
+}
+
 function handleToggle() {
   emit('toggle')
 }
@@ -529,6 +591,58 @@ function handleSelectSession(session: any) {
   color: #fead00;
   border-radius: 4px;
   font-weight: 500;
+}
+
+/* 双人对话信息样式 */
+.dual-profile {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dual-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dual-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.seiyuu-profile.compact {
+  padding: 8px 12px;
+  gap: 8px;
+}
+
+.seiyuu-profile.compact .profile-avatar .avatar,
+.seiyuu-profile.compact .profile-avatar .avatar-placeholder {
+  width: 32px;
+  height: 32px;
+  font-size: 14px;
+}
+
+.seiyuu-profile.compact .profile-name {
+  font-size: 13px;
+  margin: 0;
+}
+
+.dual-topic {
+  padding: 8px 12px;
+  background: #f9fafb;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+}
+
+.topic-text {
+  font-size: 13px;
+  color: #374151;
+  margin: 0;
+  line-height: 1.4;
 }
 
 /* 设置列表 */

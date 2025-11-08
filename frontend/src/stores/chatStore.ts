@@ -5,9 +5,10 @@
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { Message, Room, Conversation, SeiyuuConversationGroup, ChatSettings } from '@/types'
+import type { Message, Room, Conversation, SeiyuuConversationGroup, DualConversationGroup, ChatSettings } from '@/types'
 import { generateId } from '@/utils/crypto'
 import { chatPersistenceService } from '@/services/chatPersistenceService'
+import { useSeiyuuStore } from './seiyuuStore'
 
 export const useChatStore = defineStore('chat', () => {
   // 状态
@@ -328,6 +329,96 @@ export const useChatStore = defineStore('chat', () => {
     return groupedConversations.value.find(group => group.seiyuuId === seiyuuId)
   }
 
+  // === 双人对话分组 ===
+  const dualGroupedConversations = computed((): DualConversationGroup[] => {
+    const groups = new Map<string, DualConversationGroup>()
+
+    // 只处理双人剧场类型的房间
+    const dualRooms = rooms.value.filter(room => room.type === 'dual_theater' && room.participants.length === 2)
+
+    dualRooms.forEach(room => {
+      const [seiyuu1Id, seiyuu2Id] = room.participants
+      // 创建声优对ID，保持一致的顺序 (较小的ID在前)
+      const pairId = [seiyuu1Id, seiyuu2Id].sort().join('_')
+
+      if (!groups.has(pairId)) {
+        // 从room信息中获取声优基本信息
+        const seiyuu1Info = getSeiyuuInfoFromRoom(room, seiyuu1Id)
+        const seiyuu2Info = getSeiyuuInfoFromRoom(room, seiyuu2Id)
+
+        groups.set(pairId, {
+          pairId,
+          seiyuu1: seiyuu1Info,
+          seiyuu2: seiyuu2Info,
+          rooms: [],
+          totalSessions: 0,
+          totalUnread: 0,
+          lastActive: 0
+        })
+      }
+
+      const group = groups.get(pairId)!
+      group.rooms.push(room)
+      group.totalSessions++
+      group.totalUnread += room.unread_count
+
+      // 更新最后活跃时间
+      if (room.last_message?.timestamp) {
+        group.lastActive = Math.max(group.lastActive, room.last_message.timestamp)
+      }
+      if (room.created_at) {
+        group.lastActive = Math.max(group.lastActive, room.created_at)
+      }
+
+      // 设置最后一条消息（取最新的）
+      if (!group.lastMessage ||
+          (room.last_message && group.lastMessage.timestamp < room.last_message.timestamp)) {
+        group.lastMessage = room.last_message
+      }
+    })
+
+    // 为每个组设置最后一条消息（如果没有的话，取房间创建时间）
+    groups.forEach(group => {
+      if (!group.lastMessage && group.rooms.length > 0) {
+        const latestRoom = group.rooms.reduce((prev, current) =>
+          current.created_at > prev.created_at ? current : prev
+        )
+        group.lastActive = latestRoom.created_at
+      }
+    })
+
+    // 转换为数组并按最后活跃时间排序
+    return Array.from(groups.values()).sort((a, b) => b.lastActive - a.lastActive)
+  })
+
+  // 辅助函数：从房间信息中提取声优信息
+  function getSeiyuuInfoFromRoom(room: Room, seiyuuId: string) {
+    const seiyuuStore = useSeiyuuStore()
+
+    // 从声优store获取详细信息
+    const seiyuu = seiyuuStore.getSeiyuuById(seiyuuId)
+
+    if (seiyuu) {
+      return {
+        id: seiyuu.id,
+        name: seiyuu.name,
+        avatar: seiyuu.avatar_url
+      }
+    }
+
+    // 如果在声优store中找不到，返回基本信息作为备选
+    return {
+      id: seiyuuId,
+      name: '未知声优',
+      avatar: undefined
+    }
+  }
+
+  // 获取双人对话分组信息
+  function getDualGroup(pairId: string): DualConversationGroup | undefined {
+    return dualGroupedConversations.value.find(group => group.pairId === pairId)
+  }
+
   // === 数据管理 ===
 
   /**
@@ -582,6 +673,150 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+  // === 双人对话管理 ===
+
+  /**
+   * 创建双人对话会话
+   */
+  function createDualSession(
+    seiyuu1: { id: string; name: string; avatar?: string },
+    seiyuu2: { id: string; name: string; avatar?: string },
+    options?: {
+      topic?: string
+      initiatorId?: string
+      relationship?: string
+    }
+  ): Room {
+    const sessionId = generateId()
+    const now = Date.now()
+
+    // 生成会话名称
+    const sessionCount = rooms.value.filter(room =>
+      room.type === 'dual_theater' &&
+      room.participants.includes(seiyuu1.id) &&
+      room.participants.includes(seiyuu2.id)
+    ).length
+
+    const sessionName = options?.topic || `对话 ${sessionCount + 1}`
+    const roomName = `${seiyuu1.name} × ${seiyuu2.name}`
+
+    const newRoom: Room = {
+      id: generateId(),
+      type: 'dual_theater',
+      name: roomName,
+      participants: [seiyuu1.id, seiyuu2.id],
+      unread_count: 0,
+      created_at: now,
+      session_id: sessionId,
+      session_name: sessionName,
+      // 双人对话专用字段
+      dual_topic: options?.topic,
+      dual_initiator_id: options?.initiatorId || seiyuu1.id,
+      dual_relationship: options?.relationship
+    }
+
+    rooms.value.push(newRoom)
+    messages.value.set(newRoom.id, [])
+
+    // 持久化保存
+    chatPersistenceService.addRoom(newRoom).catch(error => {
+      console.error('保存双人对话房间到本地存储失败:', error)
+    })
+
+    console.log(`✅ 创建双人对话会话: ${roomName} - ${sessionName}`)
+    return newRoom
+  }
+
+  /**
+   * 获取双人对话会话列表
+   */
+  function getDualSessions(seiyuu1Id: string, seiyuu2Id: string): Room[] {
+    return rooms.value.filter(room =>
+      room.type === 'dual_theater' &&
+      room.participants.includes(seiyuu1Id) &&
+      room.participants.includes(seiyuu2Id)
+    ).sort((a, b) => b.created_at - a.created_at)
+  }
+
+  /**
+   * 查找或创建双人对话会话
+   */
+  function findOrCreateDualSession(
+    seiyuu1: { id: string; name: string; avatar?: string },
+    seiyuu2: { id: string; name: string; avatar?: string },
+    options?: {
+      topic?: string
+      initiatorId?: string
+      relationship?: string
+    }
+  ): Room {
+    // 查找现有会话
+    const existingSessions = getDualSessions(seiyuu1.id, seiyuu2.id)
+
+    if (existingSessions.length > 0) {
+      // 如果有现有会话，返回最新的一个
+      return existingSessions[0]
+    } else {
+      // 创建新会话
+      return createDualSession(seiyuu1, seiyuu2, options)
+    }
+  }
+
+  /**
+   * 切换到双人对话会话
+   */
+  function switchToDualSession(
+    seiyuu1: { id: string; name: string; avatar?: string },
+    seiyuu2: { id: string; name: string; avatar?: string },
+    options?: {
+      topic?: string
+      initiatorId?: string
+      relationship?: string
+    }
+  ): Room {
+    const room = findOrCreateDualSession(seiyuu1, seiyuu2, options)
+    setCurrentRoom(room.id)
+    return room
+  }
+
+  /**
+   * 获取当前房间的声优信息 (用于双人对话)
+   */
+  function getCurrentDualSeiyuu(): { seiyuu1: any; seiyuu2: any; initiator: any; responder: any } | null {
+    const room = currentRoom.value
+    if (!room || room.type !== 'dual_theater' || room.participants.length !== 2) {
+      return null
+    }
+
+    const [seiyuu1Id, seiyuu2Id] = room.participants
+    const initiatorId = room.dual_initiator_id || seiyuu1Id
+
+    const seiyuuStore = useSeiyuuStore()
+
+    // 从声优store获取详细信息
+    const seiyuu1Data = seiyuuStore.getSeiyuuById(seiyuu1Id)
+    const seiyuu2Data = seiyuuStore.getSeiyuuById(seiyuu2Id)
+
+    const seiyuu1 = {
+      id: seiyuu1Id,
+      name: seiyuu1Data?.name || '未知声优',
+      avatar: seiyuu1Data?.avatar_url
+    }
+
+    const seiyuu2 = {
+      id: seiyuu2Id,
+      name: seiyuu2Data?.name || '未知声优',
+      avatar: seiyuu2Data?.avatar_url
+    }
+
+    return {
+      seiyuu1,
+      seiyuu2,
+      initiator: initiatorId === seiyuu1Id ? seiyuu1 : seiyuu2,
+      responder: initiatorId === seiyuu1Id ? seiyuu2 : seiyuu1
+    }
+  }
+
   return {
     // State
     rooms,
@@ -595,6 +830,7 @@ export const useChatStore = defineStore('chat', () => {
     currentMessages,
     conversations,
     groupedConversations,
+    dualGroupedConversations,
 
     // Actions - 初始化
     loadFromStorage,
@@ -634,6 +870,14 @@ export const useChatStore = defineStore('chat', () => {
     updateSessionName,
     deleteSession,
     getSessionDisplayName,
-    migrateExistingRoomsToSessions
+    migrateExistingRoomsToSessions,
+
+    // Actions - 双人对话
+    createDualSession,
+    getDualSessions,
+    findOrCreateDualSession,
+    switchToDualSession,
+    getCurrentDualSeiyuu,
+    getDualGroup
   }
 })
