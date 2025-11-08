@@ -32,6 +32,18 @@ export interface AICallOptions {
   max_tokens?: number           // 覆盖默认token数
 }
 
+// 双声优对话AI调用选项
+export interface AICallOptionsDual {
+  responder_profile: string     // 响应者声优资料（当前要发言的声优）
+  initiator_profile: string     // 发起者声优资料（对话目标）
+  relationship_description: string // 两人关系描述
+  conversation_history: Message[] // 对话历史
+  current_topic?: string        // 当前对话话题
+  model_id?: string             // 指定使用的模型ID
+  temperature?: number          // 覆盖默认温度
+  max_tokens?: number           // 覆盖默认token数
+}
+
 // AI响应
 export interface AIResponse {
   content: string               // 生成的内容

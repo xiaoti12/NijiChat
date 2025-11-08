@@ -18,7 +18,12 @@ import type {
   AdminLoginRequest,
   AdminLoginResponse,
   CreateSeiyuuRequest,
-  UpdateSeiyuuRequest
+  UpdateSeiyuuRequest,
+  SeiyuuRelationship,
+  CreateRelationshipRequest,
+  UpdateRelationshipRequest,
+  GenerateRelationshipRequest,
+  GenerateRelationshipResponse
 } from '@/types'
 
 // ========== 公开声优接口 ==========
@@ -143,6 +148,64 @@ export function adminUpdateGroup(id: string, data: Partial<SeiyuuGroup>): Promis
  */
 export function adminDeleteGroup(id: string): Promise<{ success: boolean }> {
   return request.delete(`/admin/groups/${id}`)
+}
+
+// ========== 声优关系管理 ==========
+
+/**
+ * AI生成声优关系
+ */
+export function adminGenerateRelationship(data: GenerateRelationshipRequest): Promise<GenerateRelationshipResponse> {
+  return request.post<GenerateRelationshipResponse['data']>('/admin/relationships/generate', data)
+}
+
+/**
+ * 创建声优关系
+ */
+export function adminCreateRelationship(data: CreateRelationshipRequest): Promise<{ success: boolean; data: SeiyuuRelationship }> {
+  return request.post<SeiyuuRelationship>('/admin/relationships', data)
+}
+
+/**
+ * 查询声优关系
+ */
+export function adminGetRelationship(seiyuuIdA?: string, seiyuuIdB?: string): Promise<{ success: boolean; data: SeiyuuRelationship[] | SeiyuuRelationship }> {
+  const params = new URLSearchParams()
+  if (seiyuuIdA) params.append('seiyuu_id_a', seiyuuIdA)
+  if (seiyuuIdB) params.append('seiyuu_id_b', seiyuuIdB)
+
+  const queryString = params.toString()
+  const url = queryString ? `/admin/relationships?${queryString}` : '/admin/relationships'
+
+  return request.get<SeiyuuRelationship[] | SeiyuuRelationship>(url)
+}
+
+/**
+ * 获取所有声优关系
+ */
+export function adminGetAllRelationships(): Promise<{ success: boolean; data: SeiyuuRelationship[] }> {
+  return request.get<SeiyuuRelationship[]>('/admin/relationships')
+}
+
+/**
+ * 更新声优关系
+ */
+export function adminUpdateRelationship(id: string, data: UpdateRelationshipRequest): Promise<{ success: boolean; data: SeiyuuRelationship }> {
+  return request.put<SeiyuuRelationship>(`/admin/relationships/${id}`, data)
+}
+
+/**
+ * 删除声优关系
+ */
+export function adminDeleteRelationship(id: string): Promise<{ success: boolean }> {
+  return request.delete(`/admin/relationships/${id}`)
+}
+
+/**
+ * 获取声优的所有关系
+ */
+export function adminGetSeiyuuRelationships(seiyuuId: string): Promise<{ success: boolean; data: SeiyuuRelationship[] }> {
+  return request.get<SeiyuuRelationship[]>(`/admin/seiyuu/${seiyuuId}/relationships`)
 }
 
 // ========== 系统接口 ==========

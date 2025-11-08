@@ -7,6 +7,7 @@ import { useAIModelStore } from '@/stores/aiModelStore'
 import { useConfigStore } from '@/stores/configStore'
 import type {
   AICallOptions,
+  AICallOptionsDual,
   AIResponse,
   AIModelConfig,
   GeminiConfig,
@@ -52,6 +53,58 @@ export class AIService {
   }
 
   /**
+   * 生成双声优对话回复
+   */
+  async generateDualReply(options: AICallOptionsDual): Promise<string> {
+    const aiModelStore = useAIModelStore()
+    const configStore = useConfigStore()
+
+    // 获取AI模型配置
+    const modelId = options.model_id || configStore.config.selected_chat_model
+    if (!modelId) {
+      throw new Error('未配置AI模型，请先在设置中添加AI模型配置')
+    }
+
+    const modelConfig = aiModelStore.getModel(modelId)
+    if (!modelConfig) {
+      throw new Error('未找到指定的AI模型配置')
+    }
+
+    // 构建双声优对话提示词
+    const systemPrompt = this.buildDualSystemPrompt(
+      options.responder_profile,
+      options.initiator_profile,
+      options.relationship_description,
+      options.current_topic
+    )
+
+    // 构建消息列表（不包含用户输入，因为是声优之间的对话）
+    const messages = this.buildDualMessages(systemPrompt, options.conversation_history)
+
+    // 根据模型类型调用对应API
+    switch (modelConfig.type) {
+      case 'gemini':
+        return await this.callGeminiAPI(modelConfig as GeminiConfig, messages, {
+          message: '', // 双声优对话不需要用户消息
+          seiyuu_profile: options.responder_profile,
+          conversation_history: options.conversation_history,
+          temperature: options.temperature,
+          max_tokens: options.max_tokens
+        })
+      case 'openai':
+        return await this.callOpenAIAPI(modelConfig as OpenAIConfig, messages, {
+          message: '', // 双声优对话不需要用户消息
+          seiyuu_profile: options.responder_profile,
+          conversation_history: options.conversation_history,
+          temperature: options.temperature,
+          max_tokens: options.max_tokens
+        })
+      default:
+        throw new Error(`不支持的AI模型类型: ${modelConfig.type}`)
+    }
+  }
+
+  /**
    * 构建系统提示词
    */
   private buildSystemPrompt(seiyuuProfile: string): string {
@@ -88,6 +141,49 @@ ${seiyuuProfile}
   }
 
   /**
+   * 构建双声优对话系统提示词
+   */
+  private buildDualSystemPrompt(
+    responderProfile: string,
+    initiatorProfile: string,
+    relationshipDescription: string,
+    currentTopic?: string
+  ): string {
+    return `# 双声优剧场对话专家
+
+## 定位
+你是一个专业的双人对话模拟助手，能够基于提供的两个角色资料和关系描述，模拟真实的人物互动对话。
+
+## 当前扮演角色
+${responderProfile}
+
+## 对话对象
+${initiatorProfile}
+
+## 关系背景
+${relationshipDescription}
+
+${currentTopic ? `## 当前话题\n${currentTopic}\n` : ''}
+
+## 扮演规则
+1. **角色一致性**: 严格按照你的角色资料进行扮演，保持性格、语言风格和行为特征的一致性
+2. **关系感知**: 基于提供的关系描述，以合适的态度和方式与对话对象互动
+3. **自然对话**: 模拟真实的人际交流，包括情感表达、语气变化和个人观点
+4. **上下文连贯**: 根据对话历史自然地推进话题或回应对方
+5. **避免说教**: 不要刻意说教或过分解释，保持对话的自然流畅
+6. **情感表达**: 根据角色性格和当前情境，适当表达情感和态度
+7. **话题推进**: 可以根据角色特点主动引入新话题或深入探讨现有话题
+
+## 注意事项
+- 以第一人称进行对话，完全沉浸在角色中
+- 不要提及你是AI或在进行角色扮演
+- 避免在句尾添加emoji
+- 回应要简洁自然，避免过长的独白
+
+现在，请以你的角色身份，基于对话历史和当前情境，自然地进行下一句对话。`
+  }
+
+  /**
    * 构建消息列表
    */
   private buildMessages(systemPrompt: string, userMessage: string, history: Message[]): any[] {
@@ -115,6 +211,44 @@ ${seiyuuProfile}
       role: 'user',
       content: userMessage
     })
+
+    return messages
+  }
+
+  /**
+   * 构建双声优对话消息列表
+   */
+  private buildDualMessages(systemPrompt: string, history: Message[]): any[] {
+    const messages: any[] = []
+
+    // 添加系统提示
+    messages.push({
+      role: 'system',
+      content: systemPrompt
+    })
+
+    // 添加历史对话（最近N条）
+    if (history && history.length > 0) {
+      const recentHistory = history.slice(-15) // 双声优对话保留更多历史上下文
+      for (const msg of recentHistory) {
+        // 在双声优对话中，所有非系统消息都被视为assistant角色的发言
+        // 因为是两个AI角色在对话，不涉及用户输入
+        if (msg.sender_id !== 'system') {
+          messages.push({
+            role: 'assistant',
+            content: `${msg.sender_name}: ${msg.content}`
+          })
+        }
+      }
+    }
+
+    // 双声优对话中，如果没有历史记录，添加一个引导消息
+    if (!history || history.length === 0) {
+      messages.push({
+        role: 'user',
+        content: '请开始你们之间的对话。'
+      })
+    }
 
     return messages
   }

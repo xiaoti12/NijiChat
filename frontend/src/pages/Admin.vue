@@ -52,12 +52,20 @@
           >
             群组管理
           </button>
+          <button
+            class="tab-button"
+            :class="{ active: activeTab === 'relationships' }"
+            @click="activeTab = 'relationships'"
+          >
+            关系管理
+          </button>
         </div>
 
         <!-- Tab 内容 -->
         <div class="tab-content">
           <SeiyuuManager v-if="activeTab === 'seiyuu'" />
           <GroupManager v-if="activeTab === 'groups'" />
+          <RelationshipManager v-if="activeTab === 'relationships'" />
         </div>
       </div>
 
@@ -75,6 +83,7 @@ import { useAdminStore } from '@/stores/adminStore'
 import { adminLogin } from '@/services/apiService'
 import SeiyuuManager from '@/components/admin/SeiyuuManager.vue'
 import GroupManager from '@/components/admin/GroupManager.vue'
+import RelationshipManager from '@/components/admin/RelationshipManager.vue'
 
 const router = useRouter()
 const adminStore = useAdminStore()
