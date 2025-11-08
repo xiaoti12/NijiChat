@@ -77,7 +77,8 @@ func (s *SchedulerService) selectWithAI(ctx context.Context, message string, sei
 	prompt := s.buildSchedulerPrompt(message, seiyuus, contextHistory)
 
 	// 调用轻量级AI进行选择（网络I/O，不占用Worker CPU时间）
-	response, err := s.aiService.CallLightweightAI(ctx, prompt)
+	// todo 调度似乎是放到前端了
+	response, err := s.aiService.CallAI(ctx, prompt, "")
 	if err != nil {
 		return nil, err
 	}

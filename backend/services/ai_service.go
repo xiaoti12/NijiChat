@@ -51,15 +51,19 @@ func NewAIService() (*AIService, error) {
 	}, nil
 }
 
-// CallLightweightAI 调用轻量级AI模型（用于调度和资料处理）
-func (s *AIService) CallLightweightAI(ctx context.Context, prompt string) (string, error) {
+// CallAI 调用AI模型（用于调度和资料处理）
+func (s *AIService) CallAI(ctx context.Context, prompt, content string) (string, error) {
 	// 构建请求体
 	requestBody := map[string]interface{}{
 		"model": s.modelName, // 使用配置的模型名称
 		"messages": []map[string]string{
 			{
-				"role":    "user",
+				"role":    "system",
 				"content": prompt,
+			},
+			{
+				"role":    "user",
+				"content": content,
 			},
 		},
 		"temperature": 0.2,
@@ -136,25 +140,8 @@ func (s *AIService) CallLightweightAI(ctx context.Context, prompt string) (strin
 
 // ProcessSeiyuuProfile 使用AI处理声优资料
 func (s *AIService) ProcessSeiyuuProfile(ctx context.Context, rawText string, seiyuuName string) (*models.ProcessedProfile, error) {
-	prompt := fmt.Sprintf(`请将以下关于声优「%s」的原始资料整理为结构化的Markdown格式。
-
-要求：
-1. 总结关键信息：姓名、生日、代表作品、个人爱好、人际关系、个人轶事等
-2. 组织为清晰的Markdown格式
-3. 保持客观真实，不添加虚构内容，不允许增加或删除信息，只能整理已有内容
-4. 建议3-5个相关标签（例如性格、爱好等）
-
-原始资料：
-%s
-
-请直接返回纯JSON格式，不要使用markdown代码块：
-重要：不要添加代码块标记或任何其他格式，直接输出可解析的JSON对象！
-{
-  "profile_markdown": "整理后的Markdown文本",
-  "suggested_tags": ["标签1", "标签2", "标签3"]
-}`, seiyuuName, rawText)
-
-	response, err := s.CallLightweightAI(ctx, prompt)
+	content := "角色资料如下：\n" + rawText
+	response, err := s.CallAI(ctx, ProfilePrompt, content)
 	if err != nil {
 		return nil, err
 	}
@@ -175,7 +162,54 @@ func (s *AIService) ProcessSeiyuuProfile(ctx context.Context, rawText string, se
 
 // GenerateSeiyuuRelationship 使用AI生成声优关系
 func (s *AIService) GenerateSeiyuuRelationship(ctx context.Context, seiyuuA, seiyuuB *models.Seiyuu) (*models.GeneratedRelationship, error) {
-	prompt := fmt.Sprintf(`请根据以下两位声优的资料分析他们之间可能存在的关系。
+	content := fmt.Sprintf(`声优A： %s 的原始资料：
+%s
+
+声优B： %s 的原始资料：
+%s`, seiyuuA.Name, seiyuuA.RawProfileData, seiyuuB.Name, seiyuuB.RawProfileData)
+
+	response, err := s.CallAI(ctx, RelationshipPrompt, content)
+	if err != nil {
+		return nil, err
+	}
+
+	// 直接使用AI返回的文本内容
+	relationshipDescription := response
+
+	// 验证生成的内容不为空
+	if relationshipDescription == "" {
+		relationshipDescription = fmt.Sprintf("%s 和 %s 同为声优行业的从业者。", seiyuuA.Name, seiyuuB.Name)
+	}
+
+	// 构造结果结构体
+	result := &models.GeneratedRelationship{
+		RelationshipDescription: relationshipDescription,
+	}
+
+	return result, nil
+}
+
+const ProfilePrompt = `
+请将以下关于声优的原始资料整理为结构化的Markdown格式。
+
+要求：
+
+总结关键信息：姓名、生日、个人爱好、人际关系、个人轶事等
+组织为清晰的Markdown格式
+保持客观真实，不添加虚构内容，不允许增加或删除信息，只能整理已有内容
+建议3-5个相关标签（例如性格、爱好等）
+【重要】不允许增加或删除信息，只能整理已有内容
+
+请直接返回纯JSON格式，不要使用markdown代码块：
+重要：不要添加代码块标记或任何其他格式，直接输出可解析的JSON对象！
+{
+  "profile_markdown": "整理后的Markdown文本",
+  "suggested_tags": ["标签1", "标签2", "标签3"]
+}
+`
+
+const RelationshipPrompt = `
+请根据以下两位声优的资料分析他们之间可能存在的关系。
 
 要求：
 1. 基于提供的真实资料进行分析，不要添加虚构内容
@@ -183,39 +217,5 @@ func (s *AIService) GenerateSeiyuuRelationship(ctx context.Context, seiyuuA, sei
 3. 详细说明两人的具体关系背景、共同点或互动情况
 4. 如果没有明显关系，描述他们作为同行的共同特点和专业领域
 
-声优A：%s
-原始资料：
-%s
-
-声优B：%s
-原始资料：
-%s
-
-请直接返回纯JSON格式，不要使用markdown代码块：
-重要：不要添加代码块标记或任何其他格式，直接输出可解析的JSON对象！
-{
-  "relationship_description": "详细的关系描述，从上帝视角客观阐述两人的关系背景、共同点或互动情况"
-}`, seiyuuA.Name, seiyuuA.RawProfileData, seiyuuB.Name, seiyuuB.RawProfileData)
-
-	response, err := s.CallLightweightAI(ctx, prompt)
-	if err != nil {
-		return nil, err
-	}
-
-	// 解析JSON响应
-	var result models.GeneratedRelationship
-	err = json.Unmarshal([]byte(response), &result)
-	if err != nil {
-		// 如果解析失败，返回默认关系
-		return &models.GeneratedRelationship{
-			RelationshipDescription: fmt.Sprintf("%s 和 %s 同为声优行业的从业者，各自在不同的作品和角色中展现才华。", seiyuuA.Name, seiyuuB.Name),
-		}, nil
-	}
-
-	// 验证生成的内容不为空
-	if result.RelationshipDescription == "" {
-		result.RelationshipDescription = fmt.Sprintf("%s 和 %s 同为声优行业的从业者。", seiyuuA.Name, seiyuuB.Name)
-	}
-
-	return &result, nil
-}
+请直接返回关系描述文本，不要使用任何格式标记或代码块。
+`
