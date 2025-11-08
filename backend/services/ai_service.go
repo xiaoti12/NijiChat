@@ -172,3 +172,50 @@ func (s *AIService) ProcessSeiyuuProfile(ctx context.Context, rawText string, se
 
 	return &result, nil
 }
+
+// GenerateSeiyuuRelationship 使用AI生成声优关系
+func (s *AIService) GenerateSeiyuuRelationship(ctx context.Context, seiyuuA, seiyuuB *models.Seiyuu) (*models.GeneratedRelationship, error) {
+	prompt := fmt.Sprintf(`请根据以下两位声优的资料分析他们之间可能存在的关系。
+
+要求：
+1. 基于提供的真实资料进行分析，不要添加虚构内容
+2. 从中立的第三者视角描述关系，使用客观语言
+3. 详细说明两人的具体关系背景、共同点或互动情况
+4. 如果没有明显关系，描述他们作为同行的共同特点和专业领域
+
+声优A：%s
+原始资料：
+%s
+
+声优B：%s
+原始资料：
+%s
+
+请直接返回纯JSON格式，不要使用markdown代码块：
+重要：不要添加代码块标记或任何其他格式，直接输出可解析的JSON对象！
+{
+  "relationship_description": "详细的关系描述，从上帝视角客观阐述两人的关系背景、共同点或互动情况"
+}`, seiyuuA.Name, seiyuuA.RawProfileData, seiyuuB.Name, seiyuuB.RawProfileData)
+
+	response, err := s.CallLightweightAI(ctx, prompt)
+	if err != nil {
+		return nil, err
+	}
+
+	// 解析JSON响应
+	var result models.GeneratedRelationship
+	err = json.Unmarshal([]byte(response), &result)
+	if err != nil {
+		// 如果解析失败，返回默认关系
+		return &models.GeneratedRelationship{
+			RelationshipDescription: fmt.Sprintf("%s 和 %s 同为声优行业的从业者，各自在不同的作品和角色中展现才华。", seiyuuA.Name, seiyuuB.Name),
+		}, nil
+	}
+
+	// 验证生成的内容不为空
+	if result.RelationshipDescription == "" {
+		result.RelationshipDescription = fmt.Sprintf("%s 和 %s 同为声优行业的从业者。", seiyuuA.Name, seiyuuB.Name)
+	}
+
+	return &result, nil
+}

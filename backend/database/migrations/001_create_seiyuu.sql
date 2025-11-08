@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS seiyuu (
     name TEXT NOT NULL,                     -- 声优姓名
     avatar_url TEXT,                        -- 头像图片URL
     profile_markdown TEXT NOT NULL,         -- 完整Markdown格式资料
+    raw_profile_data TEXT,                  -- 原始资料数据（用于AI关系生成）
     tags TEXT DEFAULT '[]',                 -- JSON数组格式的标签 ["萝莉音", "治愈系"]
     status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'active', 'inactive')),  -- 状态
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,

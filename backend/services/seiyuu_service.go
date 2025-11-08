@@ -29,7 +29,7 @@ func NewSeiyuuService(db *database.D1Client, cache *database.KVClient) *SeiyuuSe
 // GetAllSeiyuu 获取所有已发布的声优列表
 func (s *SeiyuuService) GetAllSeiyuu(ctx context.Context) ([]*models.Seiyuu, error) {
 	query := `
-		SELECT id, name, avatar_url, profile_markdown, tags, status, created_at, updated_at
+		SELECT id, name, avatar_url, profile_markdown, raw_profile_data, tags, status, created_at, updated_at
 		FROM seiyuu
 		WHERE status = ?
 		ORDER BY created_at DESC
@@ -47,7 +47,7 @@ func (s *SeiyuuService) GetAllSeiyuu(ctx context.Context) ([]*models.Seiyuu, err
 // GetAllSeiyuuAdmin 获取所有声优列表（管理员接口，包含所有状态）
 func (s *SeiyuuService) GetAllSeiyuuAdmin(ctx context.Context) ([]*models.Seiyuu, error) {
 	query := `
-		SELECT id, name, avatar_url, profile_markdown, tags, status, created_at, updated_at
+		SELECT id, name, avatar_url, profile_markdown, raw_profile_data, tags, status, created_at, updated_at
 		FROM seiyuu
 		ORDER BY created_at DESC
 	`
@@ -73,7 +73,7 @@ func (s *SeiyuuService) GetSeiyuuByID(ctx context.Context, id string) (*models.S
 
 	// 从数据库查询
 	query := `
-		SELECT id, name, avatar_url, profile_markdown, tags, status, created_at, updated_at
+		SELECT id, name, avatar_url, profile_markdown, raw_profile_data, tags, status, created_at, updated_at
 		FROM seiyuu
 		WHERE id = ?
 	`
@@ -98,12 +98,19 @@ func (s *SeiyuuService) CreateSeiyuu(ctx context.Context, req *models.CreateSeiy
 	// 生成UUID
 	id := uuid.New().String()
 
+	// 如果未提供原始资料，则使用ProfileMarkdown作为默认值
+	rawProfileData := req.RawProfileData
+	if rawProfileData == "" {
+		rawProfileData = req.ProfileMarkdown
+	}
+
 	// 创建声优对象
 	seiyuu := &models.Seiyuu{
 		ID:              id,
 		Name:            req.Name,
 		AvatarURL:       req.AvatarURL,
 		ProfileMarkdown: req.ProfileMarkdown,
+		RawProfileData:  rawProfileData,
 		Tags:            req.Tags,
 		Status:          models.SeiyuuStatusPending, // 默认待审核状态
 		CreatedAt:       time.Now(),
@@ -117,8 +124,8 @@ func (s *SeiyuuService) CreateSeiyuu(ctx context.Context, req *models.CreateSeiy
 
 	// 插入数据库
 	query := `
-		INSERT INTO seiyuu (id, name, avatar_url, profile_markdown, tags, status, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO seiyuu (id, name, avatar_url, profile_markdown, raw_profile_data, tags, status, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	tagsJSON := database.JSONArrayToString(seiyuu.Tags)
@@ -127,6 +134,7 @@ func (s *SeiyuuService) CreateSeiyuu(ctx context.Context, req *models.CreateSeiy
 		seiyuu.Name,
 		seiyuu.AvatarURL,
 		seiyuu.ProfileMarkdown,
+		seiyuu.RawProfileData,
 		tagsJSON,
 		seiyuu.Status,
 		database.TimeToString(seiyuu.CreatedAt),
@@ -158,6 +166,9 @@ func (s *SeiyuuService) UpdateSeiyuu(ctx context.Context, id string, req *models
 	if req.ProfileMarkdown != nil {
 		seiyuu.ProfileMarkdown = *req.ProfileMarkdown
 	}
+	if req.RawProfileData != nil {
+		seiyuu.RawProfileData = *req.RawProfileData
+	}
 	if req.Tags != nil {
 		seiyuu.Tags = *req.Tags
 	}
@@ -174,7 +185,7 @@ func (s *SeiyuuService) UpdateSeiyuu(ctx context.Context, id string, req *models
 	// 更新数据库
 	query := `
 		UPDATE seiyuu
-		SET name = ?, avatar_url = ?, profile_markdown = ?, tags = ?, status = ?, updated_at = ?
+		SET name = ?, avatar_url = ?, profile_markdown = ?, raw_profile_data = ?, tags = ?, status = ?, updated_at = ?
 		WHERE id = ?
 	`
 
@@ -183,6 +194,7 @@ func (s *SeiyuuService) UpdateSeiyuu(ctx context.Context, id string, req *models
 		seiyuu.Name,
 		seiyuu.AvatarURL,
 		seiyuu.ProfileMarkdown,
+		seiyuu.RawProfileData,
 		tagsJSON,
 		seiyuu.Status,
 		database.TimeToString(seiyuu.UpdatedAt),
@@ -223,7 +235,7 @@ func (s *SeiyuuService) GetSeiyuuByIDs(ctx context.Context, ids []string) ([]*mo
 
 	// 构建IN查询
 	query := `
-		SELECT id, name, avatar_url, profile_markdown, tags, status, created_at, updated_at
+		SELECT id, name, avatar_url, profile_markdown, raw_profile_data, tags, status, created_at, updated_at
 		FROM seiyuu
 		WHERE id IN (?` + string(make([]byte, len(ids)-1)) + `)
 	`
@@ -247,7 +259,7 @@ func (s *SeiyuuService) GetSeiyuuByIDs(ctx context.Context, ids []string) ([]*mo
 func (s *SeiyuuService) scanSeiyuuRow(row *sql.Row) (*models.Seiyuu, error) {
 	var seiyuu models.Seiyuu
 	var tagsJSON string
-	var avatarURL sql.NullString
+	var avatarURL, rawProfileData sql.NullString
 	var createdAtStr, updatedAtStr string
 
 	err := row.Scan(
@@ -255,6 +267,7 @@ func (s *SeiyuuService) scanSeiyuuRow(row *sql.Row) (*models.Seiyuu, error) {
 		&seiyuu.Name,
 		&avatarURL,
 		&seiyuu.ProfileMarkdown,
+		&rawProfileData,
 		&tagsJSON,
 		&seiyuu.Status,
 		&createdAtStr,
@@ -267,6 +280,10 @@ func (s *SeiyuuService) scanSeiyuuRow(row *sql.Row) (*models.Seiyuu, error) {
 
 	if avatarURL.Valid {
 		seiyuu.AvatarURL = avatarURL.String
+	}
+
+	if rawProfileData.Valid {
+		seiyuu.RawProfileData = rawProfileData.String
 	}
 
 	tags, err := database.StringToJSONArray(tagsJSON)
@@ -297,7 +314,7 @@ func (s *SeiyuuService) scanSeiyuuRows(rows *sql.Rows) ([]*models.Seiyuu, error)
 	for rows.Next() {
 		var seiyuu models.Seiyuu
 		var tagsJSON string
-		var avatarURL sql.NullString
+		var avatarURL, rawProfileData sql.NullString
 		var createdAtStr, updatedAtStr string
 
 		err := rows.Scan(
@@ -305,6 +322,7 @@ func (s *SeiyuuService) scanSeiyuuRows(rows *sql.Rows) ([]*models.Seiyuu, error)
 			&seiyuu.Name,
 			&avatarURL,
 			&seiyuu.ProfileMarkdown,
+			&rawProfileData,
 			&tagsJSON,
 			&seiyuu.Status,
 			&createdAtStr,
@@ -317,6 +335,10 @@ func (s *SeiyuuService) scanSeiyuuRows(rows *sql.Rows) ([]*models.Seiyuu, error)
 
 		if avatarURL.Valid {
 			seiyuu.AvatarURL = avatarURL.String
+		}
+
+		if rawProfileData.Valid {
+			seiyuu.RawProfileData = rawProfileData.String
 		}
 
 		tags, err := database.StringToJSONArray(tagsJSON)

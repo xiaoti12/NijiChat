@@ -14,6 +14,14 @@ var (
 	ErrInvalidSeiyuuStatus   = errors.New("无效的声优状态")
 	ErrSeiyuuAlreadyExists   = errors.New("声优已存在")
 
+	// 声优关系相关错误
+	ErrRelationshipNotFound             = errors.New("声优关系不存在")
+	ErrInvalidRelationshipSeiyuuA       = errors.New("声优A的ID不能为空")
+	ErrInvalidRelationshipSeiyuuB       = errors.New("声优B的ID不能为空")
+	ErrRelationshipSameSeiyuu           = errors.New("不能创建声优与自己的关系")
+	ErrInvalidRelationshipDescription   = errors.New("关系描述不能为空")
+	ErrRelationshipAlreadyExists        = errors.New("声优关系已存在")
+
 	// 群组相关错误
 	ErrGroupNotFound            = errors.New("群组不存在")
 	ErrInvalidGroupName         = errors.New("群组名称不能为空")

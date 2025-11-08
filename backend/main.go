@@ -46,15 +46,17 @@ func main() {
 	}
 	schedulerService := services.NewSchedulerService(seiyuuService, aiService)
 	moegirlService := services.NewMoegirlService()
+	relationshipService := services.NewRelationshipService(db, cache, seiyuuService, aiService)
 
 	// 初始化处理器层
 	seiyuuHandler := handlers.NewSeiyuuHandler(seiyuuService)
 	schedulerHandler := handlers.NewSchedulerHandler(schedulerService)
 	adminHandler := handlers.NewAdminHandler(db)
 	moegirlHandler := handlers.NewMoegirlHandler(moegirlService, aiService)
+	relationshipsHandler := handlers.NewRelationshipsHandler(relationshipService)
 
 	// 注册路由
-	setupRoutes(router, seiyuuHandler, schedulerHandler, adminHandler, moegirlHandler)
+	setupRoutes(router, seiyuuHandler, schedulerHandler, adminHandler, moegirlHandler, relationshipsHandler)
 
 	// 使用syumai/workers启动Worker
 	workers.Serve(router)
@@ -67,6 +69,7 @@ func setupRoutes(
 	schedulerHandler *handlers.SchedulerHandler,
 	adminHandler *handlers.AdminHandler,
 	moegirlHandler *handlers.MoegirlHandler,
+	relationshipsHandler *handlers.RelationshipsHandler,
 ) {
 	// API版本组
 	api := router.Group("/api")
@@ -102,6 +105,14 @@ func setupRoutes(
 		admin.GET("/moegirl/:name", moegirlHandler.GetRawData)
 		admin.GET("/moegirl/search", moegirlHandler.SearchSeiyuu)
 		admin.POST("/process-profile", moegirlHandler.ProcessProfile)
+
+		// 声优关系管理
+		admin.POST("/relationships/generate", relationshipsHandler.GenerateRelationship)     // AI生成关系
+		admin.POST("/relationships", relationshipsHandler.CreateRelationship)               // 创建关系
+		admin.GET("/relationships", relationshipsHandler.GetRelationship)                   // 获取特定关系或所有关系
+		admin.PUT("/relationships/:id", relationshipsHandler.UpdateRelationship)           // 更新关系
+		admin.DELETE("/relationships/:id", relationshipsHandler.DeleteRelationship)        // 删除关系
+		admin.GET("/seiyuu/:id/relationships", relationshipsHandler.GetSeiyuuRelationships) // 获取声优的所有关系
 	}
 
 	// 404处理

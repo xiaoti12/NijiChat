@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	_ "github.com/syumai/workers/cloudflare/d1" // 注册D1驱动
@@ -143,4 +144,16 @@ func StringToTime(s string) (time.Time, error) {
 		}
 	}
 	return t, nil
+}
+
+// IsUniqueConstraintError 检查错误是否为唯一约束冲突
+func IsUniqueConstraintError(err error) bool {
+	if err == nil {
+		return false
+	}
+	// SQLite和D1的唯一约束错误包含这些关键词
+	errStr := strings.ToLower(err.Error())
+	return strings.Contains(errStr, "unique") ||
+		   strings.Contains(errStr, "constraint") ||
+		   strings.Contains(errStr, "duplicate")
 }
