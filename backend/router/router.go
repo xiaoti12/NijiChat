@@ -80,6 +80,22 @@ func (e *Engine) handleRequest(c *Context) {
 		}
 	}
 
+	// 特殊处理OPTIONS预检请求：如果存在相同路径的其他方法路由，允许OPTIONS请求通过到中间件处理
+	if c.Method() == "OPTIONS" {
+		for _, route := range e.routes {
+			if route.Method != "OPTIONS" && matchPath(route.Pattern, c.Path()) {
+				// 找到匹配的路径，只使用全局中间件处理OPTIONS请求
+				// 中间件中的CORS处理器会处理这个OPTIONS请求
+				handlers := make([]HandlerFunc, 0, len(e.middlewares))
+				handlers = append(handlers, e.middlewares...)
+
+				c.setHandlers(handlers)
+				c.Next()
+				return
+			}
+		}
+	}
+
 	// 没有找到匹配的路由
 	if e.noRouteHandler != nil {
 		c.setHandlers([]HandlerFunc{e.noRouteHandler})
