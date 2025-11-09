@@ -1,3 +1,4 @@
+DROP TABLE IF EXISTS seiyuu;
 -- 声优基础信息表
 CREATE TABLE IF NOT EXISTS seiyuu (
     id TEXT PRIMARY KEY,                    -- 声优唯一ID (UUID)

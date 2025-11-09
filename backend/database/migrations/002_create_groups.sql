@@ -1,3 +1,4 @@
+DROP TABLE IF EXISTS groups;
 -- 声优群组表
 CREATE TABLE IF NOT EXISTS seiyuu_groups (
     id TEXT PRIMARY KEY,                    -- 群组唯一ID
