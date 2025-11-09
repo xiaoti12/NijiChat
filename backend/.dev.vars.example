@@ -2,17 +2,14 @@
 # 复制此文件为 .dev.vars 并填入实际值
 # .dev.vars 文件会被 .gitignore 忽略，不会提交到 git
 
+# ========== 管理员认证配置 ==========
+
 # 管理员 JWT 密钥（开发环境）
 ADMIN_JWT_SECRET=dev-jwt-secret-key-please-change-in-production
 
-# 轻量级 AI API 密钥
-LIGHTWEIGHT_AI_API_KEY=your-openai-api-key-here
-
-# AI API 基础 URL（可选，默认使用 OpenAI）
-AI_API_BASE_URL=https://api.openai.com/v1
-
-# AI 模型名称（可选，默认使用 gpt-3.5-turbo）
-AI_MODEL_NAME=gpt-3.5-turbo
+# 管理员账号配置（硬编码方式）
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=admin456
 
 # 萌娘百科 API 地址
 MOEGIRL_API_BASE_URL=https://zh.moegirl.org.cn/api.php

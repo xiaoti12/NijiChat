@@ -61,7 +61,7 @@ func main() {
 
 	// 初始化处理器层
 	seiyuuHandler := handlers.NewSeiyuuHandler(seiyuuService)
-	adminHandler := handlers.NewAdminHandler(db)
+	adminHandler := handlers.NewAdminHandler()
 	relationshipsHandler := handlers.NewRelationshipsHandler(relationshipService)
 
 	// 注册路由
