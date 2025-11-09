@@ -109,7 +109,7 @@ export function adminPublishSeiyuu(id: string): Promise<SeiyuuDetailResponse> {
  * 获取萌娘百科原始数据
  */
 export function getMoegirlData(name: string): Promise<MoegirlRawDataResponse> {
-  return request.get<MoegirlRawDataResponse['data']>(`/admin/moegirl/${encodeURIComponent(name)}`)
+  return request.get<MoegirlRawDataResponse['data']>(`/admin/seiyuu/moegirl/${encodeURIComponent(name)}`)
 }
 
 /**

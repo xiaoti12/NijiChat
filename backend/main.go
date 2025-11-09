@@ -118,6 +118,13 @@ func setupRoutes(
 
 	// 404处理
 	engine.NoRoute(func(c *router.Context) {
+		// 确保404响应也包含CORS头
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
+		c.Writer.Header().Set("Access-Control-Expose-Headers", "Content-Length, Content-Type")
+		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
 		c.JSON(http.StatusNotFound, map[string]interface{}{
 			"success": false,
 			"error":   "接口不存在",
