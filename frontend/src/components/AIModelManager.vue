@@ -5,7 +5,8 @@
       <h3 class="manager-title">AI 模型配置</h3>
       <button @click="showAddForm = true" class="add-btn" :disabled="showAddForm">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-          <path d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2z"/>
+          <path
+            d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2z" />
         </svg>
         添加模型
       </button>
@@ -22,11 +23,7 @@
       </div>
 
       <!-- 已配置的模型 -->
-      <div
-        v-for="model in aiModelStore.models"
-        :key="model.id"
-        class="model-item"
-      >
+      <div v-for="model in aiModelStore.models" :key="model.id" class="model-item">
         <div class="model-info">
           <div class="model-header">
             <div class="model-name-section">
@@ -42,21 +39,25 @@
         <div class="model-actions">
           <button @click="testModel(model)" class="action-btn test-btn" :disabled="testingModel === model.id">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
-              <path d="M6.271 5.055a.5.5 0 0 1 .52.444L7 7.105V13a.5.5 0 0 1-1 0V7.5a.5.5 0 0 1 .004-.085L6.271 5.055z"/>
+              <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z" />
+              <path
+                d="M6.271 5.055a.5.5 0 0 1 .52.444L7 7.105V13a.5.5 0 0 1-1 0V7.5a.5.5 0 0 1 .004-.085L6.271 5.055z" />
             </svg>
             {{ testingModel === model.id ? '测试中...' : '测试' }}
           </button>
           <button @click="editModel(model)" class="action-btn edit-btn">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708L9.707 9.707a.5.5 0 0 1-.708 0L6 6.707a.5.5 0 0 1 0-.708l6.146-6.146z"/>
+              <path
+                d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708L9.707 9.707a.5.5 0 0 1-.708 0L6 6.707a.5.5 0 0 1 0-.708l6.146-6.146z" />
             </svg>
             编辑
           </button>
           <button @click="deleteModel(model)" class="action-btn delete-btn">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
-              <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+              <path
+                d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z" />
+              <path fill-rule="evenodd"
+                d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z" />
             </svg>
             删除
           </button>
@@ -71,7 +72,8 @@
           <h4>{{ editingModel ? '编辑模型配置' : '添加AI模型' }}</h4>
           <button @click="closeForm" class="close-btn">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854Z"/>
+              <path
+                d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854Z" />
             </svg>
           </button>
         </div>
@@ -80,13 +82,7 @@
           <div class="form-row">
             <div class="form-group">
               <label class="form-label">配置名称 *</label>
-              <input
-                v-model="formData.name"
-                type="text"
-                class="form-input"
-                placeholder="为这个配置起个名字"
-                required
-              />
+              <input v-model="formData.name" type="text" class="form-input" placeholder="为这个配置起个名字" required />
             </div>
             <div class="form-group">
               <label class="form-label">模型类型 *</label>
@@ -101,46 +97,24 @@
           <div class="form-row">
             <div class="form-group">
               <label class="form-label">API Key *</label>
-              <input
-                v-model="formData.api_key"
-                type="password"
-                class="form-input"
-                placeholder="输入API密钥"
-                required
-              />
+              <input v-model="formData.api_key" type="password" class="form-input" placeholder="输入API密钥" required />
             </div>
             <div class="form-group">
               <label class="form-label">API 端点</label>
-              <input
-                v-model="formData.api_endpoint"
-                type="url"
-                class="form-input"
-                :placeholder="getDefaultEndpoint(formData.type)"
-              />
+              <input v-model="formData.api_endpoint" type="url" class="form-input"
+                :placeholder="getDefaultEndpoint(formData.type)" />
             </div>
           </div>
 
           <div class="form-row">
             <div class="form-group">
               <label class="form-label">模型名称 *</label>
-              <input
-                v-model="formData.model_name"
-                type="text"
-                class="form-input"
-                :placeholder="getModelPlaceholder(formData.type)"
-                required
-              />
+              <input v-model="formData.model_name" type="text" class="form-input"
+                :placeholder="getModelPlaceholder(formData.type)" required />
             </div>
             <div class="form-group">
               <label class="form-label">最大Token数</label>
-              <input
-                v-model.number="formData.max_tokens"
-                type="number"
-                class="form-input"
-                min="50"
-                max="4000"
-                placeholder="2000"
-              />
+              <input v-model.number="formData.max_tokens" type="number" class="form-input" placeholder="8000" />
             </div>
           </div>
 
@@ -170,7 +144,8 @@
       </div>
       <button @click="testResult = null" class="result-close">
         <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-          <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854Z"/>
+          <path
+            d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854Z" />
         </svg>
       </button>
     </div>
@@ -206,9 +181,9 @@ const formData = reactive<Omit<AIModelConfig, 'id'>>({
 // 计算属性
 const isFormValid = computed(() => {
   return formData.name &&
-         formData.type &&
-         formData.api_key &&
-         formData.model_name
+    formData.type &&
+    formData.api_key &&
+    formData.model_name
 })
 
 // 方法
@@ -601,7 +576,8 @@ async function testModel(model: AIModelConfig) {
   margin-bottom: 6px;
 }
 
-.form-input, .form-select {
+.form-input,
+.form-select {
   padding: 10px 12px;
   border: 1px solid #d1d5db;
   border-radius: 6px;
@@ -610,7 +586,8 @@ async function testModel(model: AIModelConfig) {
   background: white;
 }
 
-.form-input:focus, .form-select:focus {
+.form-input:focus,
+.form-select:focus {
   outline: none;
   border-color: #fead00;
   box-shadow: 0 0 0 3px rgba(254, 173, 0, 0.1);
