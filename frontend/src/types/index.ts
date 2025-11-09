@@ -44,8 +44,8 @@ export type {
   AIStreamEvent,
   GeminiConfig,
   OpenAIConfig,
-  ClaudeConfig,
-  AIModelTestResult
+  AIModelTestResult,
+  SeiyuuProfileProcessResult
 } from './ai'
 
 // API接口相关类型

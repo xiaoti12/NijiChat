@@ -95,23 +95,8 @@ router.beforeEach((to, from, next) => {
     document.title = title
   }
 
-  // 检查是否需要管理员权限
-  if (to.meta.requiresAuth) {
-    // 开发模式下跳过登录校验
-    if (import.meta.env.DEV || import.meta.env.MODE === 'development') {
-      console.log('开发模式：跳过管理员权限校验')
-      next()
-      return
-    }
-
-    const adminStore = useAdminStore()
-    if (!adminStore.isLoggedIn) {
-      // 未登录，跳转到首页
-      console.warn('需要管理员权限')
-      next({ name: 'Home' })
-      return
-    }
-  }
+  // 对于管理页面，我们允许访问以显示登录表单
+  // 具体的权限控制在组件内部进行
 
   next()
 })
