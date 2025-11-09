@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"database/sql"
-	"os"
 
 	"seiyuu-chat/database"
 	"seiyuu-chat/models"
@@ -65,7 +64,7 @@ func (h *AdminHandler) Login(c *router.Context) {
 	}
 
 	// 生成JWT token
-	jwtSecret := os.Getenv("ADMIN_JWT_SECRET")
+	jwtSecret := utils.GetEnv("ADMIN_JWT_SECRET")
 	if jwtSecret == "" {
 		jwtSecret = "dev-jwt-secret-key"
 	}

@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"os"
 	"time"
 
 	"seiyuu-chat/database"
@@ -29,7 +28,7 @@ type SeiyuuService struct {
 // NewSeiyuuService 创建声优服务实例
 func NewSeiyuuService(db *database.D1Client, cache *database.KVClient) *SeiyuuService {
 	// 设置萌娘百科API URL
-	moegirlURL := os.Getenv("MOEGIRL_API_BASE_URL")
+	moegirlURL := utils.GetEnv("MOEGIRL_API_BASE_URL")
 	if moegirlURL == "" {
 		moegirlURL = "https://zh.moegirl.org.cn/api.php"
 	}

@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"os"
 	"seiyuu-chat/models"
 	"seiyuu-chat/router"
 	"seiyuu-chat/utils"
@@ -36,7 +35,7 @@ func AdminAuthMiddleware() router.HandlerFunc {
 		}
 
 		// 从环境变量获取JWT密钥
-		jwtSecret := os.Getenv("ADMIN_JWT_SECRET")
+		jwtSecret := utils.GetEnv("ADMIN_JWT_SECRET")
 		if jwtSecret == "" {
 			jwtSecret = "dev-jwt-secret-key" // 开发环境默认值
 		}
