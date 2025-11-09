@@ -3,7 +3,7 @@
     <div class="admin-container">
       <h1 class="admin-title">管理后台</h1>
 
-      <div v-if="!adminStore.isLoggedIn && !isDevelopmentMode" class="login-section">
+      <div v-if="!adminStore.isLoggedIn" class="login-section">
         <h2>管理员登录</h2>
         <form @submit.prevent="handleLogin" class="login-form">
           <input
@@ -27,13 +27,12 @@
         </form>
       </div>
 
-      <div v-if="adminStore.isLoggedIn || isDevelopmentMode" class="admin-content">
+      <div v-if="adminStore.isLoggedIn" class="admin-content">
         <div class="admin-header">
           <div class="admin-user-info">
-            <p>欢迎，{{ adminStore.username || (isDevelopmentMode ? '开发者' : '') }}</p>
-            <p v-if="isDevelopmentMode" class="dev-mode-hint">当前为开发模式，无需登录验证</p>
+            <p>欢迎，{{ adminStore.username }}</p>
           </div>
-          <button v-if="!isDevelopmentMode" @click="handleLogout" class="btn btn-secondary">退出登录</button>
+          <button @click="handleLogout" class="btn btn-secondary">退出登录</button>
         </div>
 
         <!-- Tab 导航 -->
@@ -108,10 +107,6 @@ const logging = ref(false)
 const loginError = ref<string | null>(null)
 const activeTab = ref('seiyuu')
 
-// 开发模式检测
-const isDevelopmentMode = computed(() => {
-  return import.meta.env.DEV || import.meta.env.MODE === 'development'
-})
 
 async function handleLogin() {
   logging.value = true
@@ -206,12 +201,6 @@ function goBack() {
   font-weight: var(--font-weight-medium);
 }
 
-.dev-mode-hint {
-  font-size: var(--font-size-xs);
-  color: #f59e0b;
-  font-weight: var(--font-weight-normal) !important;
-  margin-top: var(--spacing-xs) !important;
-}
 
 /* Tab 导航样式 */
 .admin-tabs {
