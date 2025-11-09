@@ -24,6 +24,7 @@
             {{ logging ? '登录中...' : '登录' }}
           </button>
           <p v-if="loginError" class="error-text">{{ loginError }}</p>
+          <p v-if="loginSuccess" class="success-text">{{ loginSuccess }}</p>
         </form>
       </div>
 
@@ -86,7 +87,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAdminStore } from '@/stores/adminStore'
 import { adminLogin } from '@/services/apiService'
@@ -105,21 +106,40 @@ const loginForm = reactive({
 
 const logging = ref(false)
 const loginError = ref<string | null>(null)
+const loginSuccess = ref<string | null>(null)
 const activeTab = ref('seiyuu')
 
 
 async function handleLogin() {
   logging.value = true
   loginError.value = null
+  loginSuccess.value = null
 
   try {
     const response = await adminLogin(loginForm)
     if (response.success && response.data) {
+      // 登录成功，更新状态
       adminStore.login(
         response.data.username,
         response.data.token,
         response.data.expires_at
       )
+
+      // 确保状态更新完成
+      await nextTick()
+
+      // 显示成功提示
+      loginSuccess.value = `欢迎回来，${response.data.username}！`
+
+      // 清空登录表单
+      loginForm.username = ''
+      loginForm.password = ''
+
+      // 短暂显示成功提示后清除
+      setTimeout(() => {
+        loginSuccess.value = null
+      }, 3000)
+
     } else {
       loginError.value = response.message || '登录失败'
     }
@@ -184,6 +204,13 @@ function goBack() {
   color: var(--color-error);
   font-size: var(--font-size-sm);
   text-align: center;
+}
+
+.success-text {
+  color: var(--color-success, #10b981);
+  font-size: var(--font-size-sm);
+  text-align: center;
+  font-weight: var(--font-weight-medium);
 }
 
 .admin-header {

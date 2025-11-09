@@ -10,13 +10,13 @@ import (
 func AdminAuthMiddleware() router.HandlerFunc {
 	return func(c *router.Context) {
 		// 开发环境跳过认证
-		if utils.IsDevelopmentMode() {
-			// 设置默认管理员信息用于开发环境
-			c.Set("admin_id", "dev-admin")
-			c.Set("username", "developer")
-			c.Next()
-			return
-		}
+		// if utils.IsDevelopmentMode() {
+		// 	// 设置默认管理员信息用于开发环境
+		// 	c.Set("admin_id", "dev-admin")
+		// 	c.Set("username", "developer")
+		// 	c.Next()
+		// 	return
+		// }
 
 		// 获取Authorization header
 		authHeader := c.GetHeader("Authorization")

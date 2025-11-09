@@ -53,8 +53,9 @@ export const useAdminStore = defineStore('admin', () => {
       const stored = localStorage.getItem(ADMIN_STORAGE_KEY)
       if (stored) {
         const user = JSON.parse(stored)
-        // 检查是否过期
-        if (user.expires_at > Date.now()) {
+        // 检查是否过期（后端返回秒级时间戳，需要转换为毫秒级）
+        const expiresAtMs = user.expires_at * 1000
+        if (expiresAtMs > Date.now()) {
           return user
         } else {
           // 已过期，清除
@@ -85,8 +86,16 @@ export const useAdminStore = defineStore('admin', () => {
       token,
       expires_at: expiresAt
     }
+
+    // 先更新状态
     adminUser.value = user
-    saveAdminUser(user)
+
+    // 然后保存到localStorage（即使保存失败也不影响状态）
+    try {
+      saveAdminUser(user)
+    } catch (error) {
+      console.warn('adminStore: localStorage保存失败，但登录状态仍然有效', error)
+    }
   }
 
   // 登出
@@ -99,8 +108,9 @@ export const useAdminStore = defineStore('admin', () => {
   // 检查是否已登录
   const isLoggedIn = computed(() => {
     if (!adminUser.value) return false
-    // 检查token是否过期
-    return adminUser.value.expires_at > Date.now()
+    // 检查token是否过期（后端返回秒级时间戳，需要转换为毫秒级）
+    const expiresAtMs = adminUser.value.expires_at * 1000
+    return expiresAtMs > Date.now()
   })
 
   // 获取当前用户名
@@ -113,7 +123,9 @@ export const useAdminStore = defineStore('admin', () => {
   const isTokenExpiringSoon = computed(() => {
     if (!adminUser.value) return false
     const oneHour = 60 * 60 * 1000
-    return adminUser.value.expires_at - Date.now() < oneHour
+    // 后端返回秒级时间戳，需要转换为毫秒级
+    const expiresAtMs = adminUser.value.expires_at * 1000
+    return expiresAtMs - Date.now() < oneHour
   })
 
   // ========== 管理员AI配置管理 ==========
