@@ -6,7 +6,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { AIModelConfig } from '@/types'
-import { encrypt, decrypt, generateId } from '@/utils/crypto'
+import { generateId } from '@/utils/crypto'
 
 interface AdminUser {
   username: string
@@ -21,27 +21,33 @@ export const useAdminStore = defineStore('admin', () => {
   const adminUser = ref<AdminUser | null>(loadAdminUser())
   const adminAIModels = ref<AIModelConfig[]>(loadAdminAIModels())
 
-  // 从localStorage加载管理员AI模型配置（解密）
+  // 从localStorage加载管理员AI模型配置
   function loadAdminAIModels(): AIModelConfig[] {
     try {
       const stored = localStorage.getItem(ADMIN_AI_MODELS_STORAGE_KEY)
       if (stored) {
-        const encrypted = JSON.parse(stored)
-        const decrypted = decrypt(encrypted)
-        return JSON.parse(decrypted)
+        const parsed = JSON.parse(stored)
+        // 验证数据格式
+        if (Array.isArray(parsed)) {
+          return parsed
+        } else {
+          console.warn('管理员AI配置格式不正确，重置为空数组')
+          localStorage.removeItem(ADMIN_AI_MODELS_STORAGE_KEY)
+        }
       }
     } catch (error) {
       console.error('加载管理员AI模型配置失败:', error)
+      // 清除损坏的数据
+      localStorage.removeItem(ADMIN_AI_MODELS_STORAGE_KEY)
     }
     return []
   }
 
-  // 保存管理员AI模型配置到localStorage（加密）
+  // 保存管理员AI模型配置到localStorage
   function saveAdminAIModels() {
     try {
       const json = JSON.stringify(adminAIModels.value)
-      const encrypted = encrypt(json)
-      localStorage.setItem(ADMIN_AI_MODELS_STORAGE_KEY, JSON.stringify(encrypted))
+      localStorage.setItem(ADMIN_AI_MODELS_STORAGE_KEY, json)
     } catch (error) {
       console.error('保存管理员AI模型配置失败:', error)
     }
@@ -130,6 +136,12 @@ export const useAdminStore = defineStore('admin', () => {
 
   // ========== 管理员AI配置管理 ==========
 
+  // 重新加载管理员AI模型配置
+  function reloadAdminAIModels() {
+    const reloaded = loadAdminAIModels()
+    adminAIModels.value = reloaded
+  }
+
   // 添加管理员AI模型配置
   function addAdminAIModel(model: Omit<AIModelConfig, 'id'>): AIModelConfig {
     const newModel: AIModelConfig = {
@@ -138,6 +150,10 @@ export const useAdminStore = defineStore('admin', () => {
     }
     adminAIModels.value.push(newModel)
     saveAdminAIModels()
+
+    // 保存后重新加载，确保状态同步
+    reloadAdminAIModels()
+
     return newModel
   }
 
@@ -147,6 +163,9 @@ export const useAdminStore = defineStore('admin', () => {
     if (index !== -1) {
       adminAIModels.value[index] = { ...adminAIModels.value[index], ...updates }
       saveAdminAIModels()
+
+      // 保存后重新加载，确保状态同步
+      reloadAdminAIModels()
     }
   }
 
@@ -156,6 +175,9 @@ export const useAdminStore = defineStore('admin', () => {
     if (index !== -1) {
       adminAIModels.value.splice(index, 1)
       saveAdminAIModels()
+
+      // 保存后重新加载，确保状态同步
+      reloadAdminAIModels()
     }
   }
 
@@ -186,7 +208,41 @@ export const useAdminStore = defineStore('admin', () => {
   const hasAdminLightModel = computed(() => adminLightweightModels.value.length > 0)
 
   // 检查是否有任何管理员AI配置
-  const hasAdminAIModel = computed(() => adminAIModels.value.length > 0)
+  const hasAdminAIModel = computed(() => {
+    const memoryCount = adminAIModels.value.length
+
+    // 作为备用检查，直接检查localStorage
+    let storageCount = 0
+    try {
+      const stored = localStorage.getItem(ADMIN_AI_MODELS_STORAGE_KEY)
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        if (Array.isArray(parsed)) {
+          storageCount = parsed.length
+        }
+      }
+    } catch (error) {
+      console.warn('检查localStorage中的AI配置时出错:', error)
+    }
+
+    const result = memoryCount > 0
+
+    // 调试日志：如果内存和存储不一致，输出警告
+    if (memoryCount !== storageCount) {
+
+      // 如果localStorage有数据但内存中没有，尝试重新加载
+      if (storageCount > 0 && memoryCount === 0) {
+        // 使用 nextTick 延迟重新加载，避免在计算属性中直接修改状态
+        import('vue').then(({ nextTick }) => {
+          nextTick(() => {
+            reloadAdminAIModels()
+          })
+        })
+      }
+    }
+
+    return result
+  })
 
   return {
     // State
@@ -207,6 +263,7 @@ export const useAdminStore = defineStore('admin', () => {
     // Actions
     login,
     logout,
+    reloadAdminAIModels,
     addAdminAIModel,
     updateAdminAIModel,
     deleteAdminAIModel,

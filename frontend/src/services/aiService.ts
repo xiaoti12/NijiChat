@@ -340,21 +340,69 @@ ${currentTopic ? `## 当前话题\n${currentTopic}\n` : ''}
   async processSeiyuuProfile(rawText: string, modelId?: string): Promise<SeiyuuProfileProcessResult> {
     const adminStore = useAdminStore()
 
+    // 如果没有找到模型，尝试重新加载
+    if (adminStore.adminAIModels.length === 0) {
+      adminStore.reloadAdminAIModels()
+      // 等待Vue响应式更新完成
+      await new Promise(resolve => setTimeout(resolve, 100))
+    }
+
     // 选择AI模型配置
     let modelConfig: AIModelConfig | undefined
     if (modelId) {
       modelConfig = adminStore.getAdminAIModel(modelId)
+      // 如果通过ID没找到，尝试通过名称查找
+      if (!modelConfig) {
+        modelConfig = adminStore.adminAIModels.find(m => m.name === modelId)
+      }
     } else {
       // 使用第一个可用的管理员AI配置
       const availableModels = adminStore.adminAIModels
       if (availableModels.length > 0) {
         modelConfig = availableModels[0]
+      } else {
+        // 最后一次尝试：直接从localStorage读取
+        try {
+          const stored = localStorage.getItem('nijichat_admin_ai_models')
+          if (stored) {
+            const parsed = JSON.parse(stored)
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              modelConfig = parsed[0]
+            }
+          }
+        } catch (error) {
+          console.error('aiService: 从localStorage读取配置失败:', error)
+        }
       }
     }
 
     if (!modelConfig) {
-      throw new Error('未找到可用的管理员AI配置，请先在管理员设置中配置AI模型')
+      // 详细的调试信息
+      const storedData = localStorage.getItem('nijichat_admin_ai_models')
+
+      let errorMessage = '未找到可用的管理员AI配置。'
+
+      if (!storedData) {
+        errorMessage += ' localStorage中没有AI配置数据，请在管理员后台重新添加AI配置。'
+      } else {
+        try {
+          const parsed = JSON.parse(storedData)
+          if (!Array.isArray(parsed)) {
+            errorMessage += ' 配置数据格式错误，请重新添加AI配置。'
+          } else if (parsed.length === 0) {
+            errorMessage += ' 配置数据为空，请在管理员后台添加AI配置。'
+          } else {
+            errorMessage += ` 发现${parsed.length}个配置但无法访问，可能存在状态同步问题。请尝试刷新页面或重新添加配置。`
+          }
+        } catch (error) {
+          errorMessage += ' 配置数据解析失败，请清除数据后重新添加AI配置。'
+        }
+      }
+
+      throw new Error(errorMessage)
     }
+
+    console.log('aiService: 成功获取到模型配置，开始处理 =', modelConfig.name)
 
     // 构建声优资料处理提示词
     const systemPrompt = this.buildSeiyuuProfilePrompt()
@@ -478,6 +526,12 @@ ${currentTopic ? `## 当前话题\n${currentTopic}\n` : ''}
   ): Promise<string> {
     const adminStore = useAdminStore()
 
+    // 如果没有找到模型，尝试重新加载
+    if (adminStore.adminAIModels.length === 0) {
+      console.log('aiService: generateSeiyuuRelationship 模型列表为空，尝试重新加载...')
+      adminStore.reloadAdminAIModels()
+    }
+
     // 选择AI模型配置
     let modelConfig: AIModelConfig | undefined
     if (modelId) {
@@ -487,6 +541,19 @@ ${currentTopic ? `## 当前话题\n${currentTopic}\n` : ''}
       const availableModels = adminStore.adminAIModels
       if (availableModels.length > 0) {
         modelConfig = availableModels[0]
+      } else {
+        // 最后一次尝试：直接从localStorage读取
+        try {
+          const stored = localStorage.getItem('nijichat_admin_ai_models')
+          if (stored) {
+            const parsed = JSON.parse(stored)
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              modelConfig = parsed[0]
+            }
+          }
+        } catch (error) {
+          console.error('aiService: generateSeiyuuRelationship 从localStorage读取配置失败:', error)
+        }
       }
     }
 

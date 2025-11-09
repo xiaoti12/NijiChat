@@ -48,11 +48,17 @@
       <!-- 萌娘百科数据获取 -->
       <div v-if="!isEditing" class="form-section">
         <h4>萌娘百科数据</h4>
-        <p class="section-desc">
-          可以从萌娘百科获取声优基础资料，然后通过AI处理为结构化内容
-          <span v-if="hasAdminAIConfig" class="ai-feature-hint">✨ AI处理已就绪</span>
-          <span v-else class="ai-feature-hint">⚠️ 请先配置管理员AI模型</span>
-        </p>
+        <div class="section-desc-container">
+          <p class="section-desc">
+            可以从萌娘百科获取声优基础资料，然后通过AI处理为结构化内容
+            <span v-if="hasAdminAIConfig" class="ai-feature-hint">✨ AI处理已就绪</span>
+            <span v-else class="ai-feature-hint">⚠️ 请先配置管理员AI模型</span>
+          </p>
+          <button v-if="!hasAdminAIConfig" type="button" @click="refreshAIConfig"
+            class="btn btn-sm btn-secondary refresh-btn">
+            🔄 刷新AI配置状态
+          </button>
+        </div>
 
         <div class="form-group">
           <label>萌娘百科页面名</label>
@@ -210,8 +216,16 @@ const isFormValid = computed(() => {
 })
 
 const hasAdminAIConfig = computed(() => {
-  return adminStore.hasAdminAIModel
+  const result = adminStore.hasAdminAIModel
+  // console.log('SeiyuuForm: hasAdminAIConfig =', result)
+  return result
 })
+
+// 刷新AI配置状态
+function refreshAIConfig() {
+  // console.log('手动刷新AI配置状态...')
+  adminStore.reloadAdminAIModels()
+}
 
 // 监听props变化，初始化表单
 watch(() => props.seiyuu, (seiyuu) => {
@@ -281,11 +295,17 @@ async function processWithAI() {
 
   try {
     aiProcessing.value = true
-    console.log('使用前端AI服务处理声优资料')
+    // console.log('使用前端AI服务处理声优资料')
+    // console.log('SeiyuuForm: 传递给AI服务的参数 - rawText长度:', moegirlData.value.raw_text.length)
+    // console.log('SeiyuuForm: 传递给AI服务的参数 - form.name:', form.name)
+    // console.log('SeiyuuForm: 传递给AI服务的参数 - moegirlName:', moegirlName.value.trim())
+
+    // 获取第一个可用的管理员AI模型ID
+    const firstAdminAIModelId = adminStore.adminAIModels.length > 0 ? adminStore.adminAIModels[0].id : undefined;
 
     const result = await aiService.processSeiyuuProfile(
       moegirlData.value.raw_text,
-      form.name || moegirlName.value.trim()
+      firstAdminAIModelId // 传递正确的AI模型ID
     )
 
     // 设置AI处理后的内容
@@ -427,11 +447,38 @@ async function handleSave() {
   color: var(--text-primary);
 }
 
+.section-desc-container {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+
 .section-desc {
-  margin: 0 0 var(--spacing-lg) 0;
+  margin: 0;
   font-size: var(--font-size-sm);
   color: var(--text-muted);
   line-height: 1.5;
+  flex: 1;
+}
+
+.refresh-btn {
+  white-space: nowrap;
+  font-size: var(--font-size-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 1px 3px rgba(245, 158, 11, 0.3);
+}
+
+.refresh-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.4);
 }
 
 /* 表单组 */
@@ -806,6 +853,16 @@ async function handleSave() {
 
   .form-footer {
     flex-direction: column;
+  }
+
+  .section-desc-container {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--spacing-sm);
+  }
+
+  .refresh-btn {
+    align-self: flex-start;
   }
 }
 </style>

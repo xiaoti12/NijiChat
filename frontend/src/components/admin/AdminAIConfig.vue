@@ -266,14 +266,12 @@ function handleSubmit() {
     if (editingModel.value) {
       // 更新现有模型
       adminStore.updateAdminAIModel(editingModel.value.id, formData)
-      console.log('管理员AI配置已更新')
     } else {
       // 添加新模型
       const newModel = adminStore.addAdminAIModel({
         ...formData,
         api_endpoint: formData.api_endpoint || getDefaultEndpoint(formData.type)
       })
-      console.log('新管理员AI配置已添加:', newModel)
     }
 
     closeForm()
@@ -285,7 +283,6 @@ function handleSubmit() {
 function deleteModel(model: AIModelConfig) {
   if (confirm(`确定要删除 "${model.name}" 配置吗？此操作不可恢复。`)) {
     adminStore.deleteAdminAIModel(model.id)
-    console.log('管理员AI配置已删除')
   }
 }
 
