@@ -9,7 +9,6 @@ import { useConfigStore } from '@/stores/configStore'
 import type {
   AICallOptions,
   AICallOptionsDual,
-  AIResponse,
   AIModelConfig,
   GeminiConfig,
   OpenAIConfig,
@@ -338,7 +337,7 @@ ${currentTopic ? `## 当前话题\n${currentTopic}\n` : ''}
   /**
    * 处理声优资料（管理员功能）
    */
-  async processSeiyuuProfile(rawText: string, seiyuuName?: string, modelId?: string): Promise<SeiyuuProfileProcessResult> {
+  async processSeiyuuProfile(rawText: string, modelId?: string): Promise<SeiyuuProfileProcessResult> {
     const adminStore = useAdminStore()
 
     // 选择AI模型配置

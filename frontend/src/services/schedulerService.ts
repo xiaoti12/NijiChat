@@ -76,7 +76,7 @@ export class SchedulerService {
     }
 
     // 计算置信度（0-1）
-    const maxPossibleScore = 10 + seiyuu.tags.length * 5
+    const maxPossibleScore = 10 + best.seiyuu.tags.length * 5
     const confidence = Math.min(best.score / maxPossibleScore, 1.0)
 
     return {
