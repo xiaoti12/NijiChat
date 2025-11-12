@@ -108,7 +108,7 @@
 import { ref, computed, nextTick, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import type { Seiyuu, SeiyuuRelationship, Message } from '@/types'
-import { getSeiyuuList, adminGetRelationship } from '@/services/apiService'
+import { getSeiyuuList, getRelationship } from '@/services/apiService'
 import { useAIService } from '@/services/aiService'
 import { useChatStore } from '@/stores/chatStore'
 import SeiyuuPicker from '@/components/SeiyuuPicker.vue'
@@ -162,7 +162,7 @@ async function loadRelationship() {
 
   loadingRelationship.value = true
   try {
-    const response = await adminGetRelationship(
+    const response = await getRelationship(
       selectedSeiyuu1.value.id,
       selectedSeiyuu2.value.id
     )
