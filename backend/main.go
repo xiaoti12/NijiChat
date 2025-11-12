@@ -112,6 +112,7 @@ func setupRoutes(
 		admin.GET("/seiyuu/moegirl/:name", seiyuuHandler.GetMoegirlRawData)
 
 		// 声优关系管理
+		admin.GET("/relationships", relationshipsHandler.GetRelationship)                   // 获取特定关系或所有关系
 		admin.POST("/relationships", relationshipsHandler.CreateRelationship)               // 创建关系
 		admin.PUT("/relationships/:id", relationshipsHandler.UpdateRelationship)            // 更新关系
 		admin.DELETE("/relationships/:id", relationshipsHandler.DeleteRelationship)         // 删除关系
