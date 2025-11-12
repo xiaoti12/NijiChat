@@ -4,7 +4,8 @@
     <div class="chat-header">
       <!-- 移动端汉堡菜单按钮 -->
       <button class="menu-btn" @click="handleToggleSidebar">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
           <line x1="3" y1="12" x2="21" y2="12"></line>
           <line x1="3" y1="6" x2="21" y2="6"></line>
           <line x1="3" y1="18" x2="21" y2="18"></line>
@@ -14,7 +15,7 @@
       <div class="header-avatar">
         <!-- 单人对话头像 -->
         <template v-if="!isDualConversation">
-          <img v-if="currentSeiyuuAvatar" :src="currentSeiyuuAvatar" :alt="seiyuu.name" class="avatar" />
+          <img v-if="currentSeiyuuAvatar" :src="currentSeiyuuAvatar" :alt="seiyuu?.name || '?'" class="avatar" />
           <div v-else class="avatar-placeholder">
             {{ seiyuu?.name?.charAt(0) || '?' }}
           </div>
@@ -25,14 +26,14 @@
           <div class="dual-avatar-group">
             <div class="dual-avatar dual-avatar-1">
               <img v-if="dualSeiyuu.initiator.avatar" :src="dualSeiyuu.initiator.avatar"
-                   :alt="dualSeiyuu.initiator.name" class="avatar" />
+                :alt="dualSeiyuu.initiator.name" class="avatar" />
               <div v-else class="avatar-placeholder">
                 {{ dualSeiyuu.initiator.name?.charAt(0) || '?' }}
               </div>
             </div>
             <div class="dual-avatar dual-avatar-2">
               <img v-if="dualSeiyuu.responder.avatar" :src="dualSeiyuu.responder.avatar"
-                   :alt="dualSeiyuu.responder.name" class="avatar" />
+                :alt="dualSeiyuu.responder.name" class="avatar" />
               <div v-else class="avatar-placeholder">
                 {{ dualSeiyuu.responder.name?.charAt(0) || '?' }}
               </div>
@@ -49,7 +50,8 @@
       <div class="header-actions">
         <button class="action-btn" title="设置" @click="handleToggleSettings">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+            <path
+              d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" />
           </svg>
         </button>
       </div>
@@ -63,7 +65,7 @@
           <!-- 单人对话欢迎消息 -->
           <template v-if="!isDualConversation">
             <div class="welcome-avatar">
-              <img v-if="currentSeiyuuAvatar" :src="currentSeiyuuAvatar" :alt="seiyuu.name" class="avatar" />
+              <img v-if="currentSeiyuuAvatar" :src="currentSeiyuuAvatar" :alt="seiyuu?.name || '?'" class="avatar" />
               <div v-else class="avatar-placeholder">
                 {{ seiyuu?.name?.charAt(0) || '?' }}
               </div>
@@ -80,14 +82,14 @@
               <div class="dual-avatar-group welcome-dual">
                 <div class="dual-avatar dual-avatar-1">
                   <img v-if="dualSeiyuu.initiator.avatar" :src="dualSeiyuu.initiator.avatar"
-                       :alt="dualSeiyuu.initiator.name" class="avatar" />
+                    :alt="dualSeiyuu.initiator.name" class="avatar" />
                   <div v-else class="avatar-placeholder">
                     {{ dualSeiyuu.initiator.name?.charAt(0) || '?' }}
                   </div>
                 </div>
                 <div class="dual-avatar dual-avatar-2">
                   <img v-if="dualSeiyuu.responder.avatar" :src="dualSeiyuu.responder.avatar"
-                       :alt="dualSeiyuu.responder.name" class="avatar" />
+                    :alt="dualSeiyuu.responder.name" class="avatar" />
                   <div v-else class="avatar-placeholder">
                     {{ dualSeiyuu.responder.name?.charAt(0) || '?' }}
                   </div>
@@ -107,10 +109,11 @@
           getMessageClass(message)
         ]">
           <!-- 声优消息 (左侧) 包括单人对话和双人对话的响应者 -->
-          <div v-if="message.sender_id !== 'user-1' && getMessageClass(message) !== 'initiator-message'" class="message-row">
+          <div v-if="message.sender_id !== 'user-1' && getMessageClass(message) !== 'initiator-message'"
+            class="message-row">
             <div class="message-avatar">
-              <img v-if="getMessageSenderAvatar(message)" :src="getMessageSenderAvatar(message)" :alt="message.sender_name"
-                class="avatar" />
+              <img v-if="getMessageSenderAvatar(message)" :src="getMessageSenderAvatar(message)"
+                :alt="message.sender_name" class="avatar" />
               <div v-else class="avatar-placeholder">
                 {{ message.sender_name?.charAt(0) || '?' }}
               </div>
@@ -150,8 +153,8 @@
               </div>
               <!-- 双人对话发起者头像 -->
               <template v-else>
-                <img v-if="getMessageSenderAvatar(message)" :src="getMessageSenderAvatar(message)" :alt="message.sender_name"
-                  class="avatar" />
+                <img v-if="getMessageSenderAvatar(message)" :src="getMessageSenderAvatar(message)"
+                  :alt="message.sender_name" class="avatar" />
                 <div v-else class="avatar-placeholder">
                   {{ message.sender_name?.charAt(0) || '?' }}
                 </div>
@@ -162,9 +165,31 @@
 
         <!-- 正在输入指示器 -->
         <div v-if="isTyping" class="typing-indicator">
-          <div class="message-row">
+          <!-- 双人对话的加载指示器 -->
+          <div v-if="isDualConversation && nextSpeaker" class="message-row"
+            :class="{ 'user-row': dualSeiyuu && nextSpeaker.id === dualSeiyuu.initiator.id }">
             <div class="message-avatar">
-              <img v-if="currentSeiyuuAvatar" :src="currentSeiyuuAvatar" :alt="seiyuu.name" class="avatar" />
+              <img v-if="nextSpeaker.avatar" :src="nextSpeaker.avatar" :alt="nextSpeaker.name" class="avatar" />
+              <div v-else class="avatar-placeholder">
+                {{ nextSpeaker.name?.charAt(0) || '?' }}
+              </div>
+            </div>
+
+            <div class="message-content">
+              <div class="typing-bubble">
+                <div class="typing-dots">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 单人对话的加载指示器 -->
+          <div v-else class="message-row">
+            <div class="message-avatar">
+              <img v-if="currentSeiyuuAvatar" :src="currentSeiyuuAvatar" :alt="seiyuu?.name || '?'" class="avatar" />
               <div v-else class="avatar-placeholder">
                 {{ seiyuu?.name?.charAt(0) || '?' }}
               </div>
@@ -212,7 +237,8 @@
     <div v-else class="dual-control-area">
       <button :disabled="isLoading" class="continue-btn" @click="handleContinueDual">
         <svg v-if="!isLoading" width="18" height="18" viewBox="0 0 16 16" fill="currentColor">
-          <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
+          <path
+            d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z" />
         </svg>
         <div v-else class="loading-spinner"></div>
         <span>{{ isLoading ? '正在生成...' : '继续对话' }}</span>
@@ -302,6 +328,27 @@ const dualSeiyuu = computed(() => {
         : (seiyuu2Latest?.avatar_url || dualInfo.responder.avatar)
     }
   }
+})
+
+// 计算下一个发言者（用于加载动画）
+const nextSpeaker = computed(() => {
+  if (!isDualConversation.value || !dualSeiyuu.value) return null
+
+  const { initiator, responder } = dualSeiyuu.value
+  const lastMessage = props.messages[props.messages.length - 1]
+
+  // 如果没有消息，下一个发言者是发起者
+  if (!lastMessage) {
+    return initiator
+  }
+
+  // 如果最后一条消息是发起者说的，下一个应该是响应者
+  if (lastMessage.sender_id === initiator.id) {
+    return responder
+  }
+
+  // 否则，下一个是发起者
+  return initiator
 })
 
 // 头部显示名称
@@ -417,8 +464,19 @@ function handleToggleSidebar() {
 function handleContinueDual() {
   if (!isDualConversation.value) return
 
-  // 双人对话使用空字符串触发继续对话
-  emit('sendMessage', '')
+  isTyping.value = true
+  isLoading.value = true
+
+  try {
+    // 双人对话使用空字符串触发继续对话
+    emit('sendMessage', '')
+  } catch (error) {
+    console.error('继续双人对话失败:', error)
+  } finally {
+    // 无论成功或失败，都重置加载状态，但 isTyping 的重置由父组件控制
+    isLoading.value = false
+    // isTyping.value 不在此处重置，等待父组件调用 stopTyping
+  }
 }
 
 // 暴露方法给父组件，用于控制加载状态
@@ -462,7 +520,8 @@ watch(
 
 /* 移动端汉堡菜单按钮 */
 .menu-btn {
-  display: none; /* 默认隐藏,仅在移动端显示 */
+  display: none;
+  /* 默认隐藏,仅在移动端显示 */
   width: 36px;
   height: 36px;
   border: none;
@@ -988,6 +1047,7 @@ kbd {
 
 /* 响应式 */
 @media (max-width: 768px) {
+
   /* 移动端显示汉堡菜单按钮 */
   .menu-btn {
     display: flex;
