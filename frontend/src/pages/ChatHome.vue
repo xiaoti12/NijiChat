@@ -127,7 +127,8 @@ const dualGroups = computed(() => chatStore.dualGroupedConversations)
 // 当前声优的分组信息
 const currentSeiyuuGroup = computed(() => {
   if (!currentSeiyuuId.value) return null
-  return chatStore.getSeiyuuGroup(currentSeiyuuId.value)
+  // 确保返回 null 而不是 undefined
+  return chatStore.getSeiyuuGroup(currentSeiyuuId.value) || null
 })
 
 // AI配置状态
@@ -340,7 +341,9 @@ async function handleSendMessageDual(content: string) {
     // 生成双人对话AI回复
     const aiReply = await aiService.generateDualReply({
       responder_profile: nextSpeaker.profile_markdown || '',
+      responder_id: nextSpeaker.id, // 添加 responder_id
       initiator_profile: otherSpeaker.profile_markdown || '',
+      initiator_id: otherSpeaker.id, // 添加 initiator_id
       relationship_description: currentRoom.value.dual_relationship || '两人是朋友关系',
       conversation_history: conversationHistory,
       current_topic: currentRoom.value.dual_topic,

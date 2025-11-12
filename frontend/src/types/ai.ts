@@ -30,12 +30,15 @@ export interface AICallOptions {
   stream?: boolean              // 是否流式响应
   temperature?: number          // 覆盖默认温度
   max_tokens?: number           // 覆盖默认token数
+  system_instruction?: string   // 系统指令，用于Gemini等支持独立系统指令的模型
 }
 
 // 双声优对话AI调用选项
 export interface AICallOptionsDual {
   responder_profile: string     // 响应者声优资料（当前要发言的声优）
+  responder_id: string          // 响应者声优ID
   initiator_profile: string     // 发起者声优资料（对话目标）
+  initiator_id: string          // 发起者声优ID
   relationship_description: string // 两人关系描述
   conversation_history: Message[] // 对话历史
   current_topic?: string        // 当前对话话题

@@ -79,8 +79,12 @@ export class AIService {
       options.current_topic
     )
 
-    // 构建消息列表（不包含用户输入，因为是声优之间的对话）
-    const messages = this.buildDualMessages(systemPrompt, options.conversation_history)
+    // 构建消息列表（不包含系统提示词，因为系统提示词将作为单独的 system_instruction 传递）
+    const messages = this.buildDualMessages(
+      options.conversation_history,
+      options.initiator_id,
+      options.responder_id
+    )
 
     // 根据模型类型调用对应API
     switch (modelConfig.type) {
@@ -90,7 +94,8 @@ export class AIService {
           seiyuu_profile: options.responder_profile,
           conversation_history: options.conversation_history,
           temperature: options.temperature,
-          max_tokens: options.max_tokens
+          max_tokens: options.max_tokens,
+          system_instruction: systemPrompt // 将系统提示词作为 system_instruction 传递
         })
       case 'openai':
         return await this.callOpenAIAPI(modelConfig as OpenAIConfig, messages, {
@@ -98,7 +103,8 @@ export class AIService {
           seiyuu_profile: options.responder_profile,
           conversation_history: options.conversation_history,
           temperature: options.temperature,
-          max_tokens: options.max_tokens
+          max_tokens: options.max_tokens,
+          system_instruction: systemPrompt // 将系统提示词作为 system_instruction 传递
         })
       default:
         throw new Error(`不支持的AI模型类型: ${modelConfig.type}`)
@@ -228,22 +234,25 @@ ${currentTopic ? `## 当前话题\n${currentTopic}\n` : ''}
   /**
    * 构建双声优对话消息列表
    */
-  private buildDualMessages(systemPrompt: string, history: Message[]): any[] {
+  private buildDualMessages(
+    history: Message[],
+    initiatorId: string,
+    responderId: string
+  ): any[] {
     const messages: any[] = []
-
-    // 添加系统提示
-    messages.push({
-      role: 'system',
-      content: systemPrompt
-    })
 
     // 添加历史对话（最近N条）
     if (history && history.length > 0) {
       const recentHistory = history.slice(-15) // 双声优对话保留更多历史上下文
       for (const msg of recentHistory) {
-        // 在双声优对话中，所有非系统消息都被视为assistant角色的发言
-        // 因为是两个AI角色在对话，不涉及用户输入
-        if (msg.sender_id !== 'system') {
+        if (msg.sender_id === initiatorId) {
+          // 发起者的消息视为用户输入
+          messages.push({
+            role: 'user',
+            content: `${msg.sender_name}: ${msg.content}`
+          })
+        } else if (msg.sender_id === responderId) {
+          // 响应者的消息视为AI助手的回复
           messages.push({
             role: 'assistant',
             content: `${msg.sender_name}: ${msg.content}`
@@ -253,6 +262,7 @@ ${currentTopic ? `## 当前话题\n${currentTopic}\n` : ''}
     }
 
     // 双声优对话中，如果没有历史记录，添加一个引导消息
+    // 这个引导消息将由 generateDualReply 决定如何处理，可能作为 user 消息或直接作为 system_instruction 的一部分
     if (!history || history.length === 0) {
       messages.push({
         role: 'user',
@@ -274,17 +284,24 @@ ${currentTopic ? `## 当前话题\n${currentTopic}\n` : ''}
     const url = `${config.api_endpoint}/models/${config.model_name}:generateContent?key=${config.api_key}`
 
     // 转换消息格式为Gemini格式
-    const contents = messages
-      .filter(m => m.role !== 'system')
-      .map(m => ({
-        role: m.role === 'user' ? 'user' : 'model',
-        parts: [{ text: m.content }]
-      }))
+    const contents = messages.map(m => ({
+      role: m.role === 'user' ? 'user' : 'model',
+      parts: [{ text: m.content }]
+    }))
 
-    // 系统提示词添加到第一条消息
-    const systemMessage = messages.find(m => m.role === 'system')
-    if (systemMessage && contents.length > 0) {
-      contents[0].parts[0].text = `${systemMessage.content}\n\n${contents[0].parts[0].text}`
+    const requestBody: any = {
+      contents,
+      generationConfig: {
+        temperature: options.temperature ?? config.temperature,
+        maxOutputTokens: options.max_tokens ?? config.max_tokens
+      }
+    }
+
+    // 如果存在系统指令，则添加到请求体中
+    if (options.system_instruction) {
+      requestBody.system_instruction = {
+        parts: [{ text: options.system_instruction }]
+      }
     }
 
     const response = await fetch(url, {
@@ -292,13 +309,7 @@ ${currentTopic ? `## 当前话题\n${currentTopic}\n` : ''}
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        contents,
-        generationConfig: {
-          temperature: options.temperature ?? config.temperature,
-          maxOutputTokens: options.max_tokens ?? config.max_tokens
-        }
-      })
+      body: JSON.stringify(requestBody)
     })
 
     if (!response.ok) {
@@ -327,7 +338,9 @@ ${currentTopic ? `## 当前话题\n${currentTopic}\n` : ''}
       },
       body: JSON.stringify({
         model: config.model_name,
-        messages,
+        messages: options.system_instruction
+          ? [{ role: 'system', content: options.system_instruction }, ...messages]
+          : messages,
         temperature: options.temperature ?? config.temperature,
         max_tokens: options.max_tokens ?? config.max_tokens
       })
