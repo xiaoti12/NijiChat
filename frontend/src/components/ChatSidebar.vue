@@ -1161,16 +1161,39 @@ function formatTime(timestamp: string | number): string {
 
 /* 响应式 */
 @media (max-width: 768px) {
+  /* 移动端：抽屉式侧边栏，从左侧滑入 */
   .chat-sidebar {
-    width: 100%;
-    height: 200px;
-    border-right: none;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 85vw;
+    max-width: 380px;
+    height: 100vh;
+    border-right: 1px solid rgba(0, 0, 0, 0.08);
+    border-bottom: none;
+    z-index: 999;
+    box-shadow: 4px 0 16px rgba(0, 0, 0, 0.2);
+    transform: translateX(0);
+    transition: transform 0.3s ease-in-out;
+    animation: slideInLeft 0.3s ease-in-out;
+  }
+
+  @keyframes slideInLeft {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(0);
+    }
   }
 
   .chat-sidebar.collapsed {
-    height: 60px;
-    width: 100%;
+    transform: translateX(-100%);
+    width: 85vw;
+    max-width: 380px;
+    height: 100vh;
+    box-shadow: none; /* 收起状态下移除阴影 */
   }
 
   /* 侧边栏头部优化 - 简化显示 */
@@ -1192,20 +1215,18 @@ function formatTime(timestamp: string | number): string {
     display: none;
   }
 
-  /* Toggle按钮优化 */
+  /* Toggle按钮优化 - 移动端固定在侧边栏右上角 */
   .toggle-btn {
     width: 32px;
     height: 32px;
-    right: -14px;
-    top: 50%;
+    right: 16px;
+    top: 16px;
+    transform: none;
   }
 
   .chat-sidebar.collapsed .toggle-btn {
-    width: 28px;
-    height: 28px;
-    right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
+    /* 收起状态下按钮不显示（因为整个侧边栏都在屏幕外） */
+    display: none;
   }
 
   .app-icon {

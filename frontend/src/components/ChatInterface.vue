@@ -2,6 +2,15 @@
   <div class="chat-interface">
     <!-- 聊天头部 -->
     <div class="chat-header">
+      <!-- 移动端汉堡菜单按钮 -->
+      <button class="menu-btn" @click="handleToggleSidebar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+
       <div class="header-avatar">
         <!-- 单人对话头像 -->
         <template v-if="!isDualConversation">
@@ -234,6 +243,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   sendMessage: [content: string]
   toggleSettings: []
+  toggleSidebar: []
 }>()
 
 // Store
@@ -400,6 +410,10 @@ function handleToggleSettings() {
   emit('toggleSettings')
 }
 
+function handleToggleSidebar() {
+  emit('toggleSidebar')
+}
+
 function handleContinueDual() {
   if (!isDualConversation.value) return
 
@@ -444,6 +458,32 @@ watch(
   display: flex;
   align-items: center;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* 移动端汉堡菜单按钮 */
+.menu-btn {
+  display: none; /* 默认隐藏,仅在移动端显示 */
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  transition: all 0.2s;
+  margin-right: 8px;
+  padding: 0;
+}
+
+.menu-btn:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.menu-btn:active {
+  transform: scale(0.95);
 }
 
 .header-avatar {
@@ -948,6 +988,11 @@ kbd {
 
 /* 响应式 */
 @media (max-width: 768px) {
+  /* 移动端显示汉堡菜单按钮 */
+  .menu-btn {
+    display: flex;
+  }
+
   .chat-header {
     padding: 12px 16px;
   }

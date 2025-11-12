@@ -10,7 +10,7 @@
     <!-- 中间聊天区域 -->
     <ChatInterface v-if="currentRoom" ref="chatInterfaceRef" :room="currentRoom" :messages="currentMessages"
       :seiyuu="currentSeiyuu" :use-real-AI="useRealAI" @send-message="handleSendMessage"
-      @toggle-settings="toggleRightPanel" />
+      @toggle-settings="toggleRightPanel" @toggle-sidebar="toggleLeftSidebar" />
 
     <!-- 空状态 -->
     <div v-else class="empty-state">
@@ -97,7 +97,7 @@ const configStore = useConfigStore()
 
 // 状态
 const leftSidebarCollapsed = ref(false)
-const rightPanelCollapsed = ref(false)
+const rightPanelCollapsed = ref(true) // 默认折叠右侧面板
 const loading = ref(false)
 const showAIManager = ref(false)
 const chatInterfaceRef = ref()
@@ -141,12 +141,22 @@ const useRealAI = computed(() => {
 })
 
 // 事件处理
+// 判断是否为移动端
+function isMobile(): boolean {
+  return window.innerWidth <= 768
+}
+
 function handleSelectConversation(roomId: string) {
   chatStore.setCurrentRoom(roomId)
   // 更新当前选中的声优ID
   const room = chatStore.getRoom(roomId)
   if (room && room.type === '1v1' && room.participants.length > 0) {
     currentSeiyuuId.value = room.participants[0]
+  }
+
+  // 移动端场景下自动收起左侧面板
+  if (isMobile()) {
+    leftSidebarCollapsed.value = true
   }
 }
 
@@ -171,14 +181,21 @@ function handleSelectSeiyuu(seiyuuId: string) {
     }
   }
 
-  // 确保右侧面板展开，显示会话列表
-  rightPanelCollapsed.value = false
+  // 移动端场景下自动收起左侧面板
+  if (isMobile()) {
+    leftSidebarCollapsed.value = true
+  }
 }
 
 function handleSelectDualConversation(roomId: string) {
   chatStore.setCurrentRoom(roomId)
   // 清空当前声优ID，因为这是双人对话
   currentSeiyuuId.value = null
+
+  // 移动端场景下自动收起左侧面板
+  if (isMobile()) {
+    leftSidebarCollapsed.value = true
+  }
 }
 
 function handleNewConversation() {
