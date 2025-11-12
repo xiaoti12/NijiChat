@@ -295,7 +295,7 @@ async function handleSendMessage1v1(content: string) {
       if (error.message.includes('AI请求超时')) {
         errorMessage = '哎呀，思考太久了，请稍后再试吧～'
       } else if (error.message.includes('请先配置AI模型')) {
-        errorMessage = '请先配置AI模型才能开始聊天哦～'
+        errorMessage = '请先在右侧设置面板配置AI模型才能开始聊天哦～'
       } else if (error.message.includes('网络')) {
         errorMessage = '网络好像有点问题，请检查一下连接～'
       }
@@ -401,7 +401,7 @@ async function handleSendMessageDual(content: string) {
     let errorMessage = '双人对话遇到了一些问题...'
     if (error instanceof Error) {
       if (error.message.includes('请先配置AI模型')) {
-        errorMessage = '请先配置AI模型才能开始双人对话～'
+        errorMessage = '请先在右侧设置面板配置AI模型才能开始双人对话～'
       }
     }
 

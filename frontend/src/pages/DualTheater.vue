@@ -19,7 +19,7 @@
         <div class="selection-grid">
           <!-- 声优1选择 -->
           <div class="seiyuu-selector">
-            <h3>选择声优 A</h3>
+            <h3>发起聊天人</h3>
             <div class="selected-seiyuu" v-if="selectedSeiyuu1">
               <img v-if="selectedSeiyuu1.avatar_url" :src="selectedSeiyuu1.avatar_url" :alt="selectedSeiyuu1.name"
                 class="seiyuu-avatar" />
@@ -65,7 +65,7 @@
 
           <!-- 声优2选择 -->
           <div class="seiyuu-selector">
-            <h3>选择声优 B</h3>
+            <h3>回复聊天人</h3>
             <div class="selected-seiyuu" v-if="selectedSeiyuu2">
               <img v-if="selectedSeiyuu2.avatar_url" :src="selectedSeiyuu2.avatar_url" :alt="selectedSeiyuu2.name"
                 class="seiyuu-avatar" />
@@ -188,35 +188,35 @@ function startTheater() {
     })
 
     // 创建双人对话房间
-  const relationshipDesc = relationship.value?.relationship_description ||
-    `${selectedSeiyuu1.value.name}和${selectedSeiyuu2.value.name}是同行，彼此了解但不算特别熟悉的关系。`
+    const relationshipDesc = relationship.value?.relationship_description ||
+      `${selectedSeiyuu1.value.name}和${selectedSeiyuu2.value.name}是同行，彼此了解但不算特别熟悉的关系。`
 
-  const seiyuu1Data = {
-    id: selectedSeiyuu1.value.id,
-    name: selectedSeiyuu1.value.name,
-    avatar: selectedSeiyuu1.value.avatar_url
-  }
+    const seiyuu1Data = {
+      id: selectedSeiyuu1.value.id,
+      name: selectedSeiyuu1.value.name,
+      avatar: selectedSeiyuu1.value.avatar_url
+    }
 
-  const seiyuu2Data = {
-    id: selectedSeiyuu2.value.id,
-    name: selectedSeiyuu2.value.name,
-    avatar: selectedSeiyuu2.value.avatar_url
-  }
+    const seiyuu2Data = {
+      id: selectedSeiyuu2.value.id,
+      name: selectedSeiyuu2.value.name,
+      avatar: selectedSeiyuu2.value.avatar_url
+    }
 
-  const sessionOptions = {
-    topic: currentTopic.value || undefined,
-    initiatorId: selectedSeiyuu1.value.id, // 第一个选择的声优作为发起者
-    relationship: relationshipDesc
-  }
+    const sessionOptions = {
+      topic: currentTopic.value || undefined,
+      initiatorId: selectedSeiyuu1.value.id, // 第一个选择的声优作为发起者
+      relationship: relationshipDesc
+    }
 
-  const newRoom = chatStore.createDualSession(
-    seiyuu1Data,
-    seiyuu2Data,
-    sessionOptions
-  )
+    const newRoom = chatStore.createDualSession(
+      seiyuu1Data,
+      seiyuu2Data,
+      sessionOptions
+    )
 
-  // 跳转到主页面，并选中新创建的双人对话房间
-  router.push({ name: 'Home' })
+    // 跳转到主页面，并选中新创建的双人对话房间
+    router.push({ name: 'Home' })
 
     console.log('✅ 双人剧场已创建，跳转到主页面:', {
       roomId: newRoom.id,

@@ -1190,6 +1190,10 @@ function handleDeleteDualSession() {
   border-radius: 8px;
 }
 
+.no-models-tip .btn {
+  margin: 0 auto;
+}
+
 .tip-icon {
   font-size: 24px;
   margin-bottom: 8px;
