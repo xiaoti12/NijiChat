@@ -158,15 +158,15 @@
             <div class="dual-conversation-avatar">
               <div class="dual-avatar-container">
                 <!-- 声优1头像 -->
-                <img v-if="group.seiyuu1.avatar" :src="group.seiyuu1.avatar"
-                     :alt="group.seiyuu1.name" class="dual-avatar dual-avatar-1" />
+                <img v-if="group.seiyuu1.avatar" :src="group.seiyuu1.avatar" :alt="group.seiyuu1.name"
+                  class="dual-avatar dual-avatar-1" />
                 <div v-else class="dual-avatar-placeholder dual-avatar-1">
                   {{ group.seiyuu1.name.charAt(0) || '?' }}
                 </div>
 
                 <!-- 声优2头像 -->
-                <img v-if="group.seiyuu2.avatar" :src="group.seiyuu2.avatar"
-                     :alt="group.seiyuu2.name" class="dual-avatar dual-avatar-2" />
+                <img v-if="group.seiyuu2.avatar" :src="group.seiyuu2.avatar" :alt="group.seiyuu2.name"
+                  class="dual-avatar dual-avatar-2" />
                 <div v-else class="dual-avatar-placeholder dual-avatar-2">
                   {{ group.seiyuu2.name.charAt(0) || '?' }}
                 </div>
@@ -208,7 +208,8 @@
       </div>
 
       <!-- 空状态 -->
-      <div v-if="filteredSeiyuuGroups.length === 0 && filteredDualGroups.length === 0 && !searchQuery" class="empty-conversations">
+      <div v-if="filteredSeiyuuGroups.length === 0 && filteredDualGroups.length === 0 && !searchQuery"
+        class="empty-conversations">
         <div class="empty-icon">💭</div>
         <p class="empty-text">还没有对话呢</p>
         <button @click="handleNewConversation" class="btn btn-primary">浏览声优库</button>
@@ -1172,49 +1173,121 @@ function formatTime(timestamp: string | number): string {
     width: 100%;
   }
 
+  /* 侧边栏头部优化 - 简化显示 */
+  .sidebar-header {
+    padding: 12px 16px;
+  }
+
+  .chat-sidebar.collapsed .sidebar-header {
+    padding: 10px 16px;
+  }
+
+  .app-title {
+    font-size: 20px;
+    margin-bottom: 0;
+  }
+
+  /* 移动端隐藏副标题 */
+  .app-subtitle {
+    display: none;
+  }
+
+  /* Toggle按钮优化 */
+  .toggle-btn {
+    width: 32px;
+    height: 32px;
+    right: -14px;
+    top: 50%;
+  }
+
+  .chat-sidebar.collapsed .toggle-btn {
+    width: 28px;
+    height: 28px;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .app-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+  }
+
+  /* 搜索和控制区优化 */
+  .sidebar-controls {
+    padding: 10px 16px;
+  }
+
+  /* 模式选择区域 - 横向滑动布局 */
   .mode-selection {
     padding: 8px 12px;
+  }
+
+  .mode-header {
+    margin-bottom: 6px;
   }
 
   .mode-buttons {
     flex-direction: row;
     gap: 6px;
-    overflow-x: auto;
+    display: flex;
+    justify-content: space-between;
   }
 
   .mode-btn {
-    flex-shrink: 0;
-    min-width: 90px;
-    padding: 6px 8px;
-    font-size: 11px;
+    flex: 1;
+    min-width: 0;
+    padding: 8px 10px;
+    font-size: 13px;
+    min-height: 44px;
+    /* 移动端最佳触控区域 */
+    gap: 6px;
+    justify-content: center;
   }
 
   .mode-btn svg {
-    width: 14px;
-    height: 14px;
+    width: 16px;
+    height: 16px;
   }
 
+  .mode-label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .collapsed-controls {
+    padding: 8px 16px;
+  }
+
+  .new-conversation-btn-collapsed {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+@media (max-width: 480px) {
+
+  /* 超小屏幕优化 */
   .sidebar-header {
-    padding: 15px;
+    padding: 10px 12px;
   }
 
-  .chat-sidebar.collapsed .sidebar-header {
-    padding: 10px 15px;
+  .app-title {
+    font-size: 18px;
   }
 
   .toggle-btn {
-    width: 28px;
-    height: 28px;
+    width: 30px;
+    height: 30px;
     right: -12px;
-    top: 50%;
   }
 
   .chat-sidebar.collapsed .toggle-btn {
-    width: 24px;
-    height: 24px;
+    width: 26px;
+    height: 26px;
     right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
   }
 
   .app-icon {
@@ -1223,46 +1296,43 @@ function formatTime(timestamp: string | number): string {
     font-size: 16px;
   }
 
+  /* 搜索控制区优化 */
+  .sidebar-controls {
+    padding: 8px 12px;
+  }
+
+  .search-input {
+    font-size: 13px;
+    padding: 8px 10px 8px 32px;
+  }
+
+  /* 模式选择按钮优化 */
+  .mode-selection {
+    padding: 6px 10px;
+  }
+
+  .mode-btn {
+    flex: 1;
+    min-width: 0;
+    padding: 8px 6px;
+    font-size: 12px;
+    min-height: 44px;
+    gap: 5px;
+    justify-content: center;
+  }
+
+  .mode-btn svg {
+    width: 15px;
+    height: 15px;
+  }
+
   .collapsed-controls {
     padding: 6px 12px;
   }
 
   .new-conversation-btn-collapsed {
-    width: 40px;
-    height: 40px;
-  }
-
-  .app-title {
-    font-size: 20px;
-  }
-}
-
-@media (max-width: 480px) {
-  .toggle-btn {
-    width: 26px;
-    height: 26px;
-    right: -10px;
-  }
-
-  .chat-sidebar.collapsed .toggle-btn {
-    width: 22px;
-    height: 22px;
-    right: 8px;
-  }
-
-  .app-icon {
-    width: 28px;
-    height: 28px;
-    font-size: 14px;
-  }
-
-  .collapsed-controls {
-    padding: 4px 8px;
-  }
-
-  .new-conversation-btn-collapsed {
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
   }
 }
 </style>
