@@ -2,12 +2,7 @@
   <div class="seiyuu-picker">
     <!-- 搜索框 -->
     <div class="search-box">
-      <input
-        v-model="searchQuery"
-        type="text"
-        placeholder="搜索声优名称..."
-        class="input search-input"
-      />
+      <input v-model="searchQuery" type="text" placeholder="搜索声优名称..." class="input search-input" />
     </div>
 
     <!-- 声优列表 -->
@@ -21,18 +16,8 @@
         <p v-else>暂无可选择的声优</p>
       </div>
 
-      <div
-        v-for="seiyuu in filteredSeiyuu"
-        :key="seiyuu.id"
-        class="seiyuu-item"
-        @click="selectSeiyuu(seiyuu)"
-      >
-        <img
-          v-if="seiyuu.avatar_url"
-          :src="seiyuu.avatar_url"
-          :alt="seiyuu.name"
-          class="seiyuu-avatar"
-        />
+      <div v-for="seiyuu in filteredSeiyuu" :key="seiyuu.id" class="seiyuu-item" @click="selectSeiyuu(seiyuu)">
+        <img v-if="seiyuu.avatar_url" :src="seiyuu.avatar_url" :alt="seiyuu.name" class="seiyuu-avatar" />
         <div v-else class="seiyuu-avatar placeholder">
           {{ seiyuu.name.charAt(0) }}
         </div>
@@ -40,11 +25,7 @@
         <div class="seiyuu-info">
           <div class="seiyuu-name">{{ seiyuu.name }}</div>
           <div class="seiyuu-tags">
-            <span
-              v-for="tag in seiyuu.tags.slice(0, 3)"
-              :key="tag"
-              class="tag"
-            >
+            <span v-for="tag in seiyuu.tags.slice(0, 3)" :key="tag" class="tag">
               {{ tag }}
             </span>
             <span v-if="seiyuu.tags.length > 3" class="tag more">
@@ -158,6 +139,24 @@ onMounted(() => {
   flex: 1;
   overflow-y: auto;
   max-height: 300px;
+  /* 移动端优化 */
+  -webkit-overflow-scrolling: touch;
+  /* iOS 平滑滚动 */
+}
+
+/* 移动端优化 */
+@media (max-width: 768px) {
+  .seiyuu-list {
+    max-height: 250px;
+    /* 移动端减少高度 */
+  }
+}
+
+@media (max-width: 480px) {
+  .seiyuu-list {
+    max-height: 200px;
+    /* 小屏幕进一步减少高度 */
+  }
 }
 
 .loading-state,

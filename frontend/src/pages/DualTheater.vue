@@ -96,6 +96,8 @@
           <button @click="startTheater" :disabled="!canStartTheater" class="btn btn-primary start-btn">
             创建剧场并开始对话
           </button>
+          <!-- 移动端占位符，确保内容不被固定按钮遮挡 -->
+          <div class="mobile-spacer"></div>
         </div>
       </div>
     </div>
@@ -187,6 +189,14 @@ function startTheater() {
       topic: currentTopic.value
     })
 
+    // 添加滚动状态调试
+    console.log('🔍 [DEBUG] 点击创建按钮时的滚动状态:', {
+      scrollY: window.scrollY,
+      documentHeight: document.documentElement.scrollHeight,
+      viewportHeight: window.innerHeight,
+      maxScroll: document.documentElement.scrollHeight - window.innerHeight
+    })
+
     // 创建双人对话房间
     const relationshipDesc = relationship.value?.relationship_description ||
       `${selectedSeiyuu1.value.name}和${selectedSeiyuu2.value.name}是同行，彼此了解但不算特别熟悉的关系。`
@@ -270,7 +280,38 @@ function scrollToBottom() {
 // 监听器
 watch([selectedSeiyuu1, selectedSeiyuu2], () => {
   if (selectedSeiyuu1.value && selectedSeiyuu2.value) {
+    console.log('🔍 [DEBUG] 两个声优已选择，检查滚动状态')
     loadRelationship()
+
+    // 延迟检查，确保DOM更新完成
+    nextTick(() => {
+      const topicSection = document.querySelector('.topic-section')
+      if (topicSection) {
+        const topicRect = topicSection.getBoundingClientRect()
+        console.log('🔍 [DEBUG] 话题区域位置:', {
+          top: topicRect.top,
+          bottom: topicRect.bottom,
+          windowHeight: window.innerHeight,
+          isVisible: topicRect.bottom <= window.innerHeight
+        })
+
+        // 如果话题区域不在可视范围内，平滑滚动到该区域
+        if (topicRect.top > window.innerHeight || topicRect.bottom < 0) {
+          console.log('🔍 [DEBUG] 话题区域不可见，执行滚动')
+          topicSection.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+          })
+        }
+      }
+
+      // 检查文档高度变化
+      console.log('🔍 [DEBUG] 选择声优后文档尺寸:', {
+        documentHeight: document.documentElement.scrollHeight,
+        viewportHeight: window.innerHeight,
+        canScroll: document.documentElement.scrollHeight > window.innerHeight
+      })
+    })
   } else {
     relationship.value = null
   }
@@ -279,6 +320,61 @@ watch([selectedSeiyuu1, selectedSeiyuu2], () => {
 // 生命周期
 onMounted(() => {
   // 页面加载完成
+  console.log('🔍 [DEBUG] DualTheater mounted - 检查滚动问题')
+
+  // 检查全局容器样式
+  const appElement = document.getElementById('app')
+  if (appElement) {
+    const appStyles = window.getComputedStyle(appElement)
+    console.log('🔍 [DEBUG] #app 样式:', {
+      overflow: appStyles.overflow,
+      height: appStyles.height,
+      maxHeight: appStyles.maxHeight
+    })
+  }
+
+  // 检查页面容器
+  const theaterElement = document.querySelector('.dual-theater')
+  if (theaterElement) {
+    const theaterStyles = window.getComputedStyle(theaterElement)
+    const theaterRect = theaterElement.getBoundingClientRect()
+    console.log('🔍 [DEBUG] .dual-theater 样式:', {
+      overflow: theaterStyles.overflow,
+      height: theaterStyles.height,
+      minHeight: theaterStyles.minHeight,
+      paddingBottom: theaterStyles.paddingBottom,
+      rect: {
+        height: theaterRect.height,
+        bottom: theaterRect.bottom,
+        windowHeight: window.innerHeight
+      }
+    })
+  }
+
+  // 检查按钮位置
+  const startBtn = document.querySelector('.start-btn')
+  if (startBtn) {
+    const btnStyles = window.getComputedStyle(startBtn)
+    const btnRect = startBtn.getBoundingClientRect()
+    console.log('🔍 [DEBUG] .start-btn 样式:', {
+      position: btnStyles.position,
+      bottom: btnStyles.bottom,
+      zIndex: btnStyles.zIndex,
+      rect: {
+        top: btnRect.top,
+        bottom: btnRect.bottom,
+        windowHeight: window.innerHeight
+      }
+    })
+  }
+
+  // 检查文档总高度
+  console.log('🔍 [DEBUG] 文档尺寸:', {
+    documentHeight: document.documentElement.scrollHeight,
+    viewportHeight: window.innerHeight,
+    scrollY: window.scrollY,
+    canScroll: document.documentElement.scrollHeight > window.innerHeight
+  })
 })
 </script>
 
@@ -703,8 +799,17 @@ onMounted(() => {
 }
 
 @media (max-width: 768px) {
+  .dual-theater {
+    min-height: auto;
+    /* 移除固定最小高度 */
+    padding-bottom: 80px;
+    /* 减少底部预留空间 */
+  }
+
   .setup-section {
     padding: var(--spacing-lg);
+    padding-bottom: 100px;
+    /* 确保底部有足够空间 */
   }
 
   .selection-grid {
@@ -718,7 +823,47 @@ onMounted(() => {
   }
 
   .relationship-description {
-    max-height: 120px;
+    max-height: none;
+    /* 移除固定高度限制 */
+    height: auto;
+    min-height: 80px;
+    max-height: 150px;
+    /* 设置合理的最大高度 */
+  }
+
+  .topic-section {
+    margin-top: var(--spacing-lg);
+    padding-bottom: 80px;
+    /* 增加底部间距，确保按钮不被遮挡 */
+    position: relative;
+    /* 为固定按钮提供定位上下文 */
+  }
+
+  .start-btn {
+    position: sticky;
+    /* 改为粘性定位，更符合滚动逻辑 */
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    padding: var(--spacing-md) var(--spacing-xl);
+    font-size: var(--font-size-md);
+    max-width: 90%;
+    /* 限制最大宽度 */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: var(--spacing-lg);
+    /* 增加上边距 */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    /* 增加阴影提升可见性 */
+  }
+
+  .mobile-spacer {
+    height: 80px;
+    /* 为按钮预留更多空间 */
+    display: block;
+    /* 直接显示，不需要嵌套媒体查询 */
   }
 
   .theater-header {
@@ -740,6 +885,43 @@ onMounted(() => {
 
   .message-content {
     max-width: 85%;
+  }
+}
+
+/* 更小屏幕的额外优化 */
+@media (max-width: 480px) {
+  .dual-theater {
+    padding-bottom: 60px;
+    /* 进一步减少底部空间 */
+  }
+
+  .setup-section {
+    padding: var(--spacing-md);
+    padding-bottom: 80px;
+  }
+
+  .seiyuu-selector,
+  .relationship-display {
+    padding: var(--spacing-md);
+  }
+
+  .start-btn {
+    bottom: 15px;
+    padding: var(--spacing-sm) var(--spacing-lg);
+    font-size: var(--font-size-sm);
+    position: sticky;
+    /* 保持粘性定位 */
+    margin-top: var(--spacing-md);
+  }
+
+  .topic-field {
+    font-size: 16px;
+    /* 防止iOS缩放 */
+  }
+
+  .mobile-spacer {
+    height: 60px;
+    /* 小屏幕减少占位空间 */
   }
 }
 </style>
