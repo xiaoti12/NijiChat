@@ -168,20 +168,6 @@ export function adminCreateRelationship(data: CreateRelationshipRequest): Promis
 }
 
 /**
- * 查询声优关系
- */
-export function adminGetRelationship(seiyuuIdA?: string, seiyuuIdB?: string): Promise<ApiResponse<SeiyuuRelationship[] | SeiyuuRelationship>> {
-  const params = new URLSearchParams()
-  if (seiyuuIdA) params.append('seiyuu_id_a', seiyuuIdA)
-  if (seiyuuIdB) params.append('seiyuu_id_b', seiyuuIdB)
-
-  const queryString = params.toString()
-  const url = queryString ? `/admin/relationships?${queryString}` : '/admin/relationships'
-
-  return request.get<SeiyuuRelationship[] | SeiyuuRelationship>(url)
-}
-
-/**
  * 获取所有声优关系
  */
 export function adminGetAllRelationships(): Promise<ApiResponse<SeiyuuRelationship[]>> {
@@ -207,6 +193,22 @@ export function adminDeleteRelationship(id: string): Promise<ApiResponse<any>> {
  */
 export function adminGetSeiyuuRelationships(seiyuuId: string): Promise<ApiResponse<SeiyuuRelationship[]>> {
   return request.get<SeiyuuRelationship[]>(`/admin/seiyuu/${seiyuuId}/relationships`)
+}
+
+// ========== 公开声优关系接口 ==========
+
+/**
+ * 查询声优关系（公开接口，无需认证）
+ */
+export function getRelationship(seiyuuIdA?: string, seiyuuIdB?: string): Promise<ApiResponse<SeiyuuRelationship[] | SeiyuuRelationship>> {
+  const params = new URLSearchParams()
+  if (seiyuuIdA) params.append('seiyuu_id_a', seiyuuIdA)
+  if (seiyuuIdB) params.append('seiyuu_id_b', seiyuuIdB)
+
+  const queryString = params.toString()
+  const url = queryString ? `/relationships?${queryString}` : '/relationships'
+
+  return request.get<SeiyuuRelationship[] | SeiyuuRelationship>(url)
 }
 
 // ========== 系统接口 ==========
