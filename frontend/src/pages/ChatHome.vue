@@ -347,13 +347,27 @@ async function handleSendMessageDual(content: string) {
       model_id: selectedModel
     })
 
-    // 添加AI回复消息
+    // 后处理：移除可能的"角色名："前缀
+    // 使用白名单方式，只删除已知角色名的前缀，避免误删正常对话中的冒号
+    const escapedName1 = nextSpeaker.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const escapedName2 = otherSpeaker.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const namePattern = new RegExp(`^(${escapedName1}|${escapedName2})[：:]\\s*`)
+    const processedReply = aiReply.replace(namePattern, '')
+
+    console.log('🔄 双人对话回复后处理:', {
+      original: aiReply,
+      processed: processedReply,
+      removed: aiReply !== processedReply,
+      allowedNames: [nextSpeaker.name, otherSpeaker.name]
+    })
+
+    // 添加AI回复消息（使用处理后的内容）
     chatStore.addMessage({
       room_id: currentRoom.value.id,
       sender_id: nextSpeaker.id,
       sender_name: nextSpeaker.name,
       sender_avatar: nextSpeaker.avatar,
-      content: aiReply
+      content: processedReply
     })
 
     // AI回复完成后停止加载状态
