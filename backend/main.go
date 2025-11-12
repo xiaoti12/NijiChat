@@ -88,7 +88,10 @@ func setupRoutes(
 	api.GET("/seiyuu", seiyuuHandler.GetAllSeiyuu)
 	api.GET("/seiyuu/:id", seiyuuHandler.GetSeiyuuByID)
 
-	// 管理员登录（无需认证）
+	// 公开接口 - 关系相关
+	api.GET("/relationships", relationshipsHandler.GetRelationship) // 获取特定关系或所有关系
+
+	// 管理员登录
 	api.POST("/admin/login", adminHandler.Login)
 
 	// 管理员接口（需要认证）
@@ -110,9 +113,8 @@ func setupRoutes(
 
 		// 声优关系管理
 		admin.POST("/relationships", relationshipsHandler.CreateRelationship)               // 创建关系
-		admin.GET("/relationships", relationshipsHandler.GetRelationship)                   // 获取特定关系或所有关系
-		admin.PUT("/relationships/:id", relationshipsHandler.UpdateRelationship)           // 更新关系
-		admin.DELETE("/relationships/:id", relationshipsHandler.DeleteRelationship)        // 删除关系
+		admin.PUT("/relationships/:id", relationshipsHandler.UpdateRelationship)            // 更新关系
+		admin.DELETE("/relationships/:id", relationshipsHandler.DeleteRelationship)         // 删除关系
 		admin.GET("/seiyuu/:id/relationships", relationshipsHandler.GetSeiyuuRelationships) // 获取声优的所有关系
 	}
 
