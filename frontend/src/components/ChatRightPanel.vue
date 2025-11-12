@@ -1469,8 +1469,33 @@ function handleDeleteDualSession() {
 }
 
 @media (max-width: 768px) {
+  /* 移动端：面板固定定位，从右侧滑入 */
   .chat-right-panel {
-    display: none;
+    position: fixed;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 85vw;
+    max-width: 350px;
+    z-index: 999;
+    box-shadow: -4px 0 16px rgba(0, 0, 0, 0.2);
+    transform: translateX(0);
+    transition: transform 0.3s ease-in-out;
+    animation: slideInRight 0.3s ease-in-out;
+  }
+
+  @keyframes slideInRight {
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+
+  /* 收起状态：滑出屏幕 */
+  .chat-right-panel.collapsed {
+    transform: translateX(100%);
   }
 
   .ai-manager-container,
