@@ -132,16 +132,6 @@
 
           <!-- 发起者消息 (右侧) 包括用户消息和双人对话的发起者 -->
           <div v-else class="message-row user-row">
-            <div class="message-content">
-              <div class="message-header">
-                <span class="message-time">{{ formatTime(message.timestamp) }}</span>
-                <span class="sender-name">{{ message.sender_name }}</span>
-              </div>
-              <div class="user-bubble">
-                {{ message.content }}
-              </div>
-            </div>
-
             <div class="message-avatar">
               <!-- 真实用户头像 -->
               <div v-if="message.sender_id === 'user-1'" class="user-avatar">
@@ -160,6 +150,16 @@
                 </div>
               </template>
             </div>
+
+            <div class="message-content">
+              <div class="message-header">
+                <span class="message-time">{{ formatTime(message.timestamp) }}</span>
+                <span class="sender-name">{{ message.sender_name }}</span>
+              </div>
+              <div class="user-bubble">
+                {{ message.content }}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -168,22 +168,44 @@
           <!-- 双人对话的加载指示器 -->
           <div v-if="isDualConversation && nextSpeaker" class="message-row"
             :class="{ 'user-row': dualSeiyuu && nextSpeaker.id === dualSeiyuu.initiator.id }">
-            <div class="message-avatar">
-              <img v-if="nextSpeaker.avatar" :src="nextSpeaker.avatar" :alt="nextSpeaker.name" class="avatar" />
-              <div v-else class="avatar-placeholder">
-                {{ nextSpeaker.name?.charAt(0) || '?' }}
-              </div>
-            </div>
-
-            <div class="message-content">
-              <div class="typing-bubble">
-                <div class="typing-dots">
-                  <span></span>
-                  <span></span>
-                  <span></span>
+            <!-- 当是发起者时，头像在前（会被反转到右边） -->
+            <template v-if="dualSeiyuu && nextSpeaker.id === dualSeiyuu.initiator.id">
+              <div class="message-avatar">
+                <img v-if="nextSpeaker.avatar" :src="nextSpeaker.avatar" :alt="nextSpeaker.name" class="avatar" />
+                <div v-else class="avatar-placeholder">
+                  {{ nextSpeaker.name?.charAt(0) || '?' }}
                 </div>
               </div>
-            </div>
+
+              <div class="message-content">
+                <div class="typing-bubble">
+                  <div class="typing-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </div>
+                </div>
+              </div>
+            </template>
+            <!-- 当是响应者时，头像在前（正常排列在左边） -->
+            <template v-else>
+              <div class="message-avatar">
+                <img v-if="nextSpeaker.avatar" :src="nextSpeaker.avatar" :alt="nextSpeaker.name" class="avatar" />
+                <div v-else class="avatar-placeholder">
+                  {{ nextSpeaker.name?.charAt(0) || '?' }}
+                </div>
+              </div>
+
+              <div class="message-content">
+                <div class="typing-bubble">
+                  <div class="typing-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </div>
+                </div>
+              </div>
+            </template>
           </div>
 
           <!-- 单人对话的加载指示器 -->
