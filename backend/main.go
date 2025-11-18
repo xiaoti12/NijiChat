@@ -63,9 +63,10 @@ func main() {
 	seiyuuHandler := handlers.NewSeiyuuHandler(seiyuuService)
 	adminHandler := handlers.NewAdminHandler()
 	relationshipsHandler := handlers.NewRelationshipsHandler(relationshipService)
+	testCodeHandler := handlers.NewTestCodeHandler()
 
 	// 注册路由
-	setupRoutes(engine, seiyuuHandler, adminHandler, relationshipsHandler)
+	setupRoutes(engine, seiyuuHandler, adminHandler, relationshipsHandler, testCodeHandler)
 
 	// 使用syumai/workers启动Worker
 	workers.Serve(engine)
@@ -77,6 +78,7 @@ func setupRoutes(
 	seiyuuHandler *handlers.SeiyuuHandler,
 	adminHandler *handlers.AdminHandler,
 	relationshipsHandler *handlers.RelationshipsHandler,
+	testCodeHandler *handlers.TestCodeHandler,
 ) {
 	// API版本组
 	api := engine.Group("/api")
@@ -90,6 +92,9 @@ func setupRoutes(
 
 	// 公开接口 - 关系相关
 	api.GET("/relationships", relationshipsHandler.GetRelationship) // 获取特定关系或所有关系
+
+	// 公开接口 - 测试码功能
+	api.GET("/test-model-config", testCodeHandler.GetModelConfig)
 
 	// 管理员登录
 	api.POST("/admin/login", adminHandler.Login)

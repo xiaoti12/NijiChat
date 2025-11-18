@@ -125,3 +125,19 @@ export interface UserConfig {
   selected_light_model?: string // 选中的轻量级模型ID
   webdav?: WebDAVConfig
 }
+
+// 测试码获取AI模型配置响应
+export interface TestCodeModelConfigResponse {
+  success: boolean
+  data?: {
+    name: string
+    type: string
+    api_key: string
+    api_endpoint: string
+    model_name: string
+    is_lightweight: boolean
+    max_tokens: number
+    temperature: number
+  }
+  error?: string
+}

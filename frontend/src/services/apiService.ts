@@ -24,7 +24,8 @@ import type {
   UpdateRelationshipRequest,
   GenerateRelationshipRequest,
   GenerateRelationshipResponse,
-  ApiResponse
+  ApiResponse,
+  TestCodeModelConfigResponse
 } from '@/types'
 
 // ========== 公开声优接口 ==========
@@ -218,4 +219,14 @@ export function getRelationship(seiyuuIdA?: string, seiyuuIdB?: string): Promise
  */
 export function healthCheck(): Promise<ApiResponse<any>> {
   return request.get('/health')
+}
+
+// ========== 测试码功能 ==========
+
+/**
+ * 通过测试码获取AI模型配置
+ * @param code 测试码
+ */
+export function getModelConfigByTestCode(code: string): Promise<TestCodeModelConfigResponse> {
+  return request.get<TestCodeModelConfigResponse['data']>(`/test-model-config?code=${encodeURIComponent(code)}`)
 }

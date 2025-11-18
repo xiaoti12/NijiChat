@@ -22,3 +22,7 @@ LOG_LEVEL=debug
 
 # CORS 允许的来源（开发环境）
 CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
+
+# 测试码功能 - API Key
+# 用于测试码功能返回的AI模型配置
+TEST_MODEL_API_KEY=sk-your-test-api-key-here

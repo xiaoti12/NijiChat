@@ -3,13 +3,22 @@
     <!-- 头部 -->
     <div class="manager-header">
       <h3 class="manager-title">AI 模型配置</h3>
-      <button @click="showAddForm = true" class="add-btn" :disabled="showAddForm">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-          <path
-            d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2z" />
-        </svg>
-        添加模型
-      </button>
+      <div class="header-actions">
+        <button @click="showTestCodeForm = true" class="test-code-btn">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M2.5 8a5.5 5.5 0 0 1 8.25-4.764.5.5 0 0 0 .5-.866A6.5 6.5 0 1 0 14.5 8a.5.5 0 0 0-1 0 5.5 5.5 0 1 1-11 0z"/>
+            <path d="M15.354 3.354a.5.5 0 0 0-.708-.708L8 9.293 5.354 6.646a.5.5 0 1 0-.708.708l3 3a.5.5 0 0 0 .708 0l7-7z"/>
+          </svg>
+          使用体验码
+        </button>
+        <button @click="showAddForm = true" class="add-btn" :disabled="showAddForm">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path
+              d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2z" />
+          </svg>
+          添加模型
+        </button>
+      </div>
     </div>
 
     <!-- 模型列表 -->
@@ -131,6 +140,48 @@
       </div>
     </div>
 
+    <!-- 体验码输入弹窗 -->
+    <div v-if="showTestCodeForm" class="model-form-overlay" @click="closeTestCodeForm">
+      <div class="model-form test-code-form" @click.stop>
+        <div class="form-header">
+          <h4>使用体验码获取配置</h4>
+          <button @click="closeTestCodeForm" class="close-btn">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path
+                d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854Z" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="form-content">
+          <div class="form-group">
+            <label class="form-label">请输入体验码</label>
+            <input
+              v-model="testCode"
+              type="text"
+              class="form-input"
+              placeholder=""
+              @keyup.enter="submitTestCode"
+            />
+            <p class="form-hint">输入体验码后，系统将自动获取预配置的AI模型参数，让您快速体验功能</p>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" @click="closeTestCodeForm" class="btn btn-secondary">
+              取消
+            </button>
+            <button
+              @click="submitTestCode"
+              class="btn btn-primary"
+              :disabled="!testCode.trim() || isSubmittingTestCode"
+            >
+              {{ isSubmittingTestCode ? '获取中...' : '获取配置' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- 测试结果提示 -->
     <div v-if="testResult" class="test-result" :class="testResult.success ? 'success' : 'error'">
       <div class="result-icon">
@@ -156,6 +207,7 @@
 import { ref, computed, reactive } from 'vue'
 import { useAIModelStore } from '@/stores/aiModelStore'
 import { aiService } from '@/services/aiService'
+import { getModelConfigByTestCode } from '@/services/apiService'
 import type { AIModelConfig, AIModelType, AIModelTestResult } from '@/types'
 
 const aiModelStore = useAIModelStore()
@@ -165,6 +217,11 @@ const showAddForm = ref(false)
 const editingModel = ref<AIModelConfig | null>(null)
 const testingModel = ref<string | null>(null)
 const testResult = ref<AIModelTestResult | null>(null)
+
+// 测试码相关状态
+const showTestCodeForm = ref(false)
+const testCode = ref('')
+const isSubmittingTestCode = ref(false)
 
 // 表单数据
 const formData = reactive<Omit<AIModelConfig, 'id'>>({
@@ -302,6 +359,69 @@ async function testModel(model: AIModelConfig) {
     testingModel.value = null
   }
 }
+
+// 测试码相关方法
+function closeTestCodeForm() {
+  showTestCodeForm.value = false
+  testCode.value = ''
+  isSubmittingTestCode.value = false
+}
+
+async function submitTestCode() {
+  if (!testCode.value.trim() || isSubmittingTestCode.value) return
+
+  isSubmittingTestCode.value = true
+  testResult.value = null
+
+  try {
+    // 调用后端API获取配置
+    const response = await getModelConfigByTestCode(testCode.value.trim())
+
+    if (response.success && response.data) {
+      // 将配置保存到store
+      const newModel = aiModelStore.addModel({
+        name: response.data.name,
+        type: response.data.type as AIModelType,
+        api_key: response.data.api_key,
+        api_endpoint: response.data.api_endpoint,
+        model_name: response.data.model_name,
+        is_lightweight: response.data.is_lightweight,
+        max_tokens: response.data.max_tokens,
+        temperature: response.data.temperature
+      })
+
+      // 显示成功提示
+      testResult.value = {
+        success: true,
+        message: `成功添加模型配置: ${response.data.name}`
+      }
+
+      // 关闭测试码弹窗
+      closeTestCodeForm()
+
+      // 自动关闭成功提示
+      setTimeout(() => {
+        testResult.value = null
+      }, 3000)
+
+      console.log('通过测试码添加的模型:', newModel)
+    } else {
+      throw new Error(response.error || '获取配置失败')
+    }
+  } catch (error: any) {
+    testResult.value = {
+      success: false,
+      message: error.response?.data?.error || error.message || '获取配置失败，请检查测试码是否正确'
+    }
+
+    // 自动关闭错误提示
+    setTimeout(() => {
+      testResult.value = null
+    }, 5000)
+  } finally {
+    isSubmittingTestCode.value = false
+  }
+}
 </script>
 
 <style scoped>
@@ -323,6 +443,31 @@ async function testModel(model: AIModelConfig) {
   font-weight: 600;
   color: #1f2937;
   margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.test-code-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.test-code-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
 }
 
 .add-btn {
@@ -574,6 +719,17 @@ async function testModel(model: AIModelConfig) {
   font-weight: 500;
   color: #374151;
   margin-bottom: 6px;
+}
+
+.form-hint {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 6px;
+  margin-bottom: 0;
+}
+
+.test-code-form {
+  max-width: 450px;
 }
 
 .form-input,
