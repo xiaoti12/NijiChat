@@ -37,7 +37,8 @@
       },
       // 生产环境的敏感变量通过 wrangler secret put 设置
       // wrangler secret put ADMIN_JWT_SECRET --env production
-      // wrangler secret put LIGHTWEIGHT_AI_API_KEY --env production
+      // wrangler secret put ADMIN_USERNAME --env production (可选)
+      // wrangler secret put ADMIN_PASSWORD --env production (可选)
       "build": {
         "command": "npm run build:deploy"
       },
